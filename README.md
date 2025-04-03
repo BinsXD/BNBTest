@@ -100,7 +100,7 @@ gcc BNBTest.c -o BNBTest
 8. Include account transfer functionality
 
 ## Author
-[Your Name]
+Vince L. Bernante
 
 ## License
 This project is open source and available under the MIT License. 
