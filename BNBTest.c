@@ -29,9 +29,22 @@ struct Account {
     struct Account* next;
 };
 
+// Define structure for transactions
+struct Transaction {
+    int accountNumber;
+    char transactionType[20];  // "Deposit", "Withdrawal", "Transfer"
+    float amount;
+    float balanceAfter;
+    time_t timestamp;
+    int recipientAccountNumber;  // For transfer transactions
+    char recipientName[50];      // For transfer transactions
+    struct Transaction* next;
+};
+
 // Global variables
 struct User* userHead = NULL;
 struct Account* head = NULL;
+struct Transaction* transactionHead = NULL;
 int accountCounter = 1001;
 int currentUserAccountNo = 0;  // Store logged in user's account number
 
@@ -50,6 +63,117 @@ int isStrongPassword(char* password) {
     }
     
     return (hasUpper && hasLower && hasDigit);
+}
+
+// Function to add a transaction record
+void addTransaction(int accountNumber, const char* transactionType, float amount, float balanceAfter, int recipientAccountNumber, const char* recipientName) {
+    struct Transaction* newTransaction = (struct Transaction*)malloc(sizeof(struct Transaction));
+    
+    newTransaction->accountNumber = accountNumber;
+    strcpy(newTransaction->transactionType, transactionType);
+    newTransaction->amount = amount;
+    newTransaction->balanceAfter = balanceAfter;
+    newTransaction->timestamp = time(NULL);
+    
+    // Set recipient information for transfers
+    if (strcmp(transactionType, "Transfer Out") == 0 || strcmp(transactionType, "Transfer In") == 0) {
+        newTransaction->recipientAccountNumber = recipientAccountNumber;
+        strcpy(newTransaction->recipientName, recipientName);
+    } else {
+        newTransaction->recipientAccountNumber = 0;
+        strcpy(newTransaction->recipientName, "");
+    }
+    
+    newTransaction->next = transactionHead;
+    transactionHead = newTransaction;
+}
+
+// Function to generate receipt
+void generateReceipt(int accountNumber) {
+    struct Transaction* temp = transactionHead;
+    struct Account* acc = NULL;
+    struct User* user = NULL;
+    int found = 0;
+    char filename[50];
+    FILE* receiptFile;
+    time_t currentTime = time(NULL);
+    
+    // Find account and user information
+    struct Account* accTemp = head;
+    while (accTemp != NULL) {
+        if (accTemp->accountNumber == accountNumber) {
+            acc = accTemp;
+            break;
+        }
+        accTemp = accTemp->next;
+    }
+    
+    struct User* userTemp = userHead;
+    while (userTemp != NULL) {
+        if (userTemp->accountNumber == accountNumber) {
+            user = userTemp;
+            break;
+        }
+        userTemp = userTemp->next;
+    }
+    
+    if (acc == NULL || user == NULL) {
+        printf("Account information not found!\n");
+        return;
+    }
+    
+    // Create filename with account number and timestamp
+    sprintf(filename, "receipt_%d_%ld.txt", accountNumber, currentTime);
+    receiptFile = fopen(filename, "w");
+    
+    if (receiptFile == NULL) {
+        printf("Error creating receipt file!\n");
+        return;
+    }
+    
+    // Write receipt header
+    fprintf(receiptFile, "==========================================\n");
+    fprintf(receiptFile, "              BANCO NI BINS              \n");
+    fprintf(receiptFile, "==========================================\n\n");
+    fprintf(receiptFile, "Date: %s", ctime(&currentTime));
+    fprintf(receiptFile, "Account Number: %d\n", accountNumber);
+    fprintf(receiptFile, "Account Holder: %s %s\n", user->firstName, user->lastName);
+    fprintf(receiptFile, "Current Balance: %.2f\n\n", acc->balance);
+    fprintf(receiptFile, "Transaction History:\n");
+    fprintf(receiptFile, "------------------------------------------\n");
+    
+    // Write transaction history
+    while (temp != NULL) {
+        if (temp->accountNumber == accountNumber) {
+            fprintf(receiptFile, "Type: %s\n", temp->transactionType);
+            fprintf(receiptFile, "Amount: %.2f\n", temp->amount);
+            fprintf(receiptFile, "Balance After: %.2f\n", temp->balanceAfter);
+            
+            // Add recipient information for transfers
+            if (strcmp(temp->transactionType, "Transfer Out") == 0) {
+                fprintf(receiptFile, "Recipient Account: %d\n", temp->recipientAccountNumber);
+                fprintf(receiptFile, "Recipient Name: %s\n", temp->recipientName);
+            } else if (strcmp(temp->transactionType, "Transfer In") == 0) {
+                fprintf(receiptFile, "Sender Account: %d\n", temp->recipientAccountNumber);
+                fprintf(receiptFile, "Sender Name: %s\n", temp->recipientName);
+            }
+            
+            fprintf(receiptFile, "Time: %s", ctime(&temp->timestamp));
+            fprintf(receiptFile, "------------------------------------------\n");
+            found = 1;
+        }
+        temp = temp->next;
+    }
+    
+    if (!found) {
+        fprintf(receiptFile, "No transactions found for this session.\n");
+    }
+    
+    fprintf(receiptFile, "\nThank you for banking with Banco Ni Bins!\n");
+    fprintf(receiptFile, "==========================================\n");
+    
+    fclose(receiptFile);
+    printf("Receipt generated successfully: %s\n", filename);
 }
 
 // Function to sign up
@@ -135,6 +259,23 @@ void signUp() {
     newUser->next = userHead;
     userHead = newUser;
     
+    // Create a corresponding account in the head list
+    struct Account* newAccount = (struct Account*)malloc(sizeof(struct Account));
+    newAccount->accountNumber = newAccNo;
+    strcpy(newAccount->name, newUser->firstName);
+    strcat(newAccount->name, " ");
+    strcat(newAccount->name, newUser->lastName);
+    newAccount->balance = 0.0;
+    strcpy(newAccount->username, newUser->username);
+    newAccount->next = head;
+    head = newAccount;
+    
+    // Set the current user account number
+    currentUserAccountNo = newAccNo;
+    
+    // Record account creation as a transaction
+    addTransaction(newAccNo, "Account Creation", 0.0, 0.0, 0, "");
+    
     printf("\n=== Account Created Successfully ===\n");
     printf("Your Account Number: %d\n", newAccNo);
     printf("Please keep your account number safe!\n");
@@ -148,14 +289,22 @@ int login(char* username) {
     
     printf("\n=== Login ===\n");
     printf("Enter Account Number: ");
-    scanf("%d", &accountNo);
+    if (scanf("%d", &accountNo) != 1) {
+        printf("Invalid account number format!\n");
+        while(getchar() != '\n');
+        return -1;
+    }
     while(getchar() != '\n');
     
     temp = userHead;
     while (temp != NULL) {
         if (temp->accountNumber == accountNo) {
             printf("Enter PIN: ");
-            scanf("%d", &pin);
+            if (scanf("%d", &pin) != 1) {
+                printf("Invalid PIN format!\n");
+                while(getchar() != '\n');
+                return -1;
+            }
             while(getchar() != '\n');
             
             if (temp->pin == pin) {
@@ -202,6 +351,10 @@ void createAccount(char* username) {
     newAccount->next = head;
     head = newAccount;
     currentUserAccountNo = newAccNo;  // Store the account number for current user
+    
+    // Record account creation as a transaction
+    addTransaction(newAccNo, "Account Creation", 0.0, 0.0, 0, "");
+    
     printf("Account created successfully! Your Account Number: %d\n", newAccNo);
 }
 
@@ -209,23 +362,36 @@ void createAccount(char* username) {
 int verifyPIN() {
     int pin;
     struct User* temp = userHead;
+    int found = 0;
     
+    // First check if the user exists
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) {
-            printf("Enter PIN: ");
-            scanf("%d", &pin);
-            while(getchar() != '\n');
-            
-            if (temp->pin == pin) {
-                return 1;
-            } else {
-                printf("Invalid PIN!\n");
-                return 0;
-            }
+            found = 1;
+            break;
         }
         temp = temp->next;
     }
-    return 0;
+    
+    if (!found) {
+        printf("User account not found!\n");
+        return 0;
+    }
+    
+    printf("Enter PIN: ");
+    if (scanf("%d", &pin) != 1) {
+        printf("Invalid PIN format!\n");
+        while(getchar() != '\n');
+        return 0;
+    }
+    while(getchar() != '\n');
+    
+    if (temp->pin == pin) {
+        return 1;
+    } else {
+        printf("Invalid PIN!\n");
+        return 0;
+    }
 }
 
 // Function to deposit money
@@ -238,13 +404,23 @@ void deposit() {
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) {
             printf("Enter amount to deposit: ");
-            scanf("%f", &amount);
+            if (scanf("%f", &amount) != 1 || amount <= 0) {
+                printf("Invalid amount! Please enter a positive number.\n");
+                while(getchar() != '\n'); // Clear input buffer
+                return;
+            }
+            
             temp->balance += amount;
             printf("Amount deposited successfully! New Balance: %.2f\n", temp->balance);
+            
+            // Record transaction
+            addTransaction(currentUserAccountNo, "Deposit", amount, temp->balance, 0, "");
             return;
         }
         temp = temp->next;
     }
+    
+    printf("Account not found!\n");
 }
 
 // Function to withdraw money
@@ -257,17 +433,27 @@ void withdraw() {
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) {
             printf("Enter amount to withdraw: ");
-            scanf("%f", &amount);
+            if (scanf("%f", &amount) != 1 || amount <= 0) {
+                printf("Invalid amount! Please enter a positive number.\n");
+                while(getchar() != '\n'); // Clear input buffer
+                return;
+            }
+            
             if (amount > temp->balance) {
                 printf("Insufficient balance!\n");
             } else {
                 temp->balance -= amount;
                 printf("Withdrawal successful! New Balance: %.2f\n", temp->balance);
+                
+                // Record transaction
+                addTransaction(currentUserAccountNo, "Withdrawal", amount, temp->balance, 0, "");
             }
             return;
         }
         temp = temp->next;
     }
+    
+    printf("Account not found!\n");
 }
 
 // Function to check balance
@@ -281,6 +467,9 @@ void checkBalance() {
             printf("\n=== Account Information ===\n");
             printf("Account Number: %d\n", temp->accountNumber);
             printf("Current Balance: %.2f\n", temp->balance);
+            
+            // Record balance check as a transaction
+            addTransaction(currentUserAccountNo, "Balance Check", 0.0, temp->balance, 0, "");
             return;
         }
         temp = temp->next;
@@ -314,14 +503,28 @@ void transfer() {
     float amount;
     struct Account *fromAcc = NULL, *toAcc = NULL;
     struct Account* temp;
+    char recipientName[50] = "";
     
     printf("Enter recipient's account number: ");
-    scanf("%d", &toAccNo);
+    if (scanf("%d", &toAccNo) != 1) {
+        printf("Invalid account number!\n");
+        while(getchar() != '\n'); // Clear input buffer
+        return;
+    }
+    
+    // Check if trying to transfer to the same account
+    if (toAccNo == currentUserAccountNo) {
+        printf("Cannot transfer to the same account!\n");
+        return;
+    }
     
     temp = head;
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) fromAcc = temp;
-        if (temp->accountNumber == toAccNo) toAcc = temp;
+        if (temp->accountNumber == toAccNo) {
+            toAcc = temp;
+            strcpy(recipientName, temp->name);
+        }
         temp = temp->next;
     }
     
@@ -331,7 +534,11 @@ void transfer() {
     }
     
     printf("Enter amount to transfer: ");
-    scanf("%f", &amount);
+    if (scanf("%f", &amount) != 1 || amount <= 0) {
+        printf("Invalid amount! Please enter a positive number.\n");
+        while(getchar() != '\n'); // Clear input buffer
+        return;
+    }
     
     if (amount > fromAcc->balance) {
         printf("Insufficient balance!\n");
@@ -342,6 +549,21 @@ void transfer() {
     toAcc->balance += amount;
     printf("Transfer successful!\n");
     printf("Your new balance: %.2f\n", fromAcc->balance);
+    
+    // Get sender's name for the recipient's receipt
+    char senderName[50] = "";
+    temp = head;
+    while (temp != NULL) {
+        if (temp->accountNumber == currentUserAccountNo) {
+            strcpy(senderName, temp->name);
+            break;
+        }
+        temp = temp->next;
+    }
+    
+    // Record transactions for both accounts
+    addTransaction(currentUserAccountNo, "Transfer Out", amount, fromAcc->balance, toAccNo, recipientName);
+    addTransaction(toAccNo, "Transfer In", amount, toAcc->balance, currentUserAccountNo, senderName);
 }
 
 // Function to generate random account number
@@ -354,6 +576,7 @@ int main() {
     int choice, loggedIn = 0;
     char username[50];
     int isAdmin;
+    char receiptChoice;
     
     while (1) {
         if (!loggedIn) {
@@ -402,6 +625,14 @@ int main() {
                     checkBalance(); 
                     break;
                 case 5: 
+                    printf("Would you like a receipt of your transactions? (Y/N): ");
+                    scanf(" %c", &receiptChoice);
+                    while(getchar() != '\n');
+                    
+                    if (toupper(receiptChoice) == 'Y') {
+                        generateReceipt(currentUserAccountNo);
+                    }
+                    
                     loggedIn = 0; 
                     printf("Logged out successfully!\n");
                     break;
