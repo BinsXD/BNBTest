@@ -571,12 +571,115 @@ int generateAccountNumber() {
     return 100000 + (rand() % 900000);  // Generates number between 100000-999999
 }
 
+// --- File Handling Functions ---
+
+// Save users to file
+void saveUsersToFile() {
+    FILE *fp = fopen("users.txt", "w");
+    if (!fp) return;
+    struct User *temp = userHead;
+    while (temp) {
+        fprintf(fp, "%s|%s|%s|%s|%s|%s|%d|%d|%d\n",
+            temp->username, temp->password, temp->firstName, temp->lastName,
+            temp->address, temp->phoneNumber, temp->pin, temp->accountNumber, temp->isAdmin);
+        temp = temp->next;
+    }
+    fclose(fp);
+}
+
+// Load users from file
+void loadUsersFromFile() {
+    FILE *fp = fopen("users.txt", "r");
+    if (!fp) return;
+    char buf[400];
+    while (fgets(buf, sizeof(buf), fp)) {
+        struct User *newUser = (struct User*)malloc(sizeof(struct User));
+        sscanf(buf, "%49[^|]|%49[^|]|%49[^|]|%49[^|]|%99[^|]|%14[^|]|%d|%d|%d",
+            newUser->username, newUser->password, newUser->firstName, newUser->lastName,
+            newUser->address, newUser->phoneNumber, &newUser->pin, &newUser->accountNumber, &newUser->isAdmin);
+        newUser->next = userHead;
+        userHead = newUser;
+    }
+    fclose(fp);
+}
+
+// Save accounts to file
+void saveAccountsToFile() {
+    FILE *fp = fopen("accounts.txt", "w");
+    if (!fp) return;
+    struct Account *temp = head;
+    while (temp) {
+        fprintf(fp, "%d|%s|%.2f|%s\n", temp->accountNumber, temp->name, temp->balance, temp->username);
+        temp = temp->next;
+    }
+    fclose(fp);
+}
+
+// Load accounts from file
+void loadAccountsFromFile() {
+    FILE *fp = fopen("accounts.txt", "r");
+    if (!fp) return;
+    char buf[200];
+    while (fgets(buf, sizeof(buf), fp)) {
+        struct Account *newAcc = (struct Account*)malloc(sizeof(struct Account));
+        sscanf(buf, "%d|%49[^|]|%f|%49[^\n]", &newAcc->accountNumber, newAcc->name, &newAcc->balance, newAcc->username);
+        newAcc->next = head;
+        head = newAcc;
+    }
+    fclose(fp);
+}
+
+// Save transactions to file
+void saveTransactionsToFile() {
+    FILE *fp = fopen("transactions.txt", "w");
+    if (!fp) return;
+    struct Transaction *temp = transactionHead;
+    while (temp) {
+        fprintf(fp, "%d|%s|%.2f|%.2f|%ld|%d|%s\n", temp->accountNumber, temp->transactionType, temp->amount, temp->balanceAfter, (long)temp->timestamp, temp->recipientAccountNumber, temp->recipientName);
+        temp = temp->next;
+    }
+    fclose(fp);
+}
+
+// Load transactions from file
+void loadTransactionsFromFile() {
+    FILE *fp = fopen("transactions.txt", "r");
+    if (!fp) return;
+    char buf[300];
+    while (fgets(buf, sizeof(buf), fp)) {
+        struct Transaction *newT = (struct Transaction*)malloc(sizeof(struct Transaction));
+        long t;
+        sscanf(buf, "%d|%19[^|]|%f|%f|%ld|%d|%49[^\n]", &newT->accountNumber, newT->transactionType, &newT->amount, &newT->balanceAfter, &t, &newT->recipientAccountNumber, newT->recipientName);
+        newT->timestamp = (time_t)t;
+        newT->next = transactionHead;
+        transactionHead = newT;
+    }
+    fclose(fp);
+}
+
+// Save all data
+void saveAllData() {
+    saveUsersToFile();
+    saveAccountsToFile();
+    saveTransactionsToFile();
+}
+
+// Load all data
+void loadAllData() {
+    loadUsersFromFile();
+    loadAccountsFromFile();
+    loadTransactionsFromFile();
+}
+
 int main() {
     srand(time(NULL));  // Initialize random number generator
     int choice, loggedIn = 0;
     char username[50];
     int isAdmin;
     char receiptChoice;
+
+    // Load data from files
+    loadAllData();
     
     while (1) {
         if (!loggedIn) {
@@ -594,6 +697,7 @@ int main() {
                     break;
                 case 2:
                     signUp();
+                    saveAllData();
                     break;
                 case 3:
                     printf("Exiting...\n");
@@ -614,15 +718,19 @@ int main() {
             switch (choice) {
                 case 1: 
                     deposit(); 
+                    saveAllData();
                     break;
                 case 2: 
                     withdraw(); 
+                    saveAllData();
                     break;
                 case 3: 
                     transfer(); 
+                    saveAllData();
                     break;
                 case 4: 
                     checkBalance(); 
+                    saveAllData();
                     break;
                 case 5: 
                     printf("Would you like a receipt of your transactions? (Y/N): ");
@@ -634,6 +742,7 @@ int main() {
                     }
                     
                     loggedIn = 0; 
+                    saveAllData();
                     printf("Logged out successfully!\n");
                     break;
                 default: 
