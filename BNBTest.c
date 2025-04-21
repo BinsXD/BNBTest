@@ -67,7 +67,7 @@ int isStrongPassword(char* password) {
 
 // Function to add a transaction record
 void addTransaction(int accountNumber, const char* transactionType, float amount, float balanceAfter, int recipientAccountNumber, const char* recipientName) {
-    struct Transaction* newTransaction = (struct Transaction*)malloc(sizeof(struct Transaction));
+    struct Transaction* newTransaction = (struct Transaction*)calloc(1, sizeof(struct Transaction));
     
     newTransaction->accountNumber = accountNumber;
     strcpy(newTransaction->transactionType, transactionType);
@@ -593,7 +593,7 @@ void loadUsersFromFile() {
     if (!fp) return;
     char buf[400];
     while (fgets(buf, sizeof(buf), fp)) {
-        struct User *newUser = (struct User*)malloc(sizeof(struct User));
+        struct User *newUser = (struct User*)calloc(1, sizeof(struct User));
         sscanf(buf, "%49[^|]|%49[^|]|%49[^|]|%49[^|]|%99[^|]|%14[^|]|%d|%d|%d",
             newUser->username, newUser->password, newUser->firstName, newUser->lastName,
             newUser->address, newUser->phoneNumber, &newUser->pin, &newUser->accountNumber, &newUser->isAdmin);
@@ -621,7 +621,7 @@ void loadAccountsFromFile() {
     if (!fp) return;
     char buf[200];
     while (fgets(buf, sizeof(buf), fp)) {
-        struct Account *newAcc = (struct Account*)malloc(sizeof(struct Account));
+        struct Account *newAcc = (struct Account*)calloc(1, sizeof(struct Account));
         sscanf(buf, "%d|%49[^|]|%f|%49[^\n]", &newAcc->accountNumber, newAcc->name, &newAcc->balance, newAcc->username);
         newAcc->next = head;
         head = newAcc;
@@ -647,9 +647,10 @@ void loadTransactionsFromFile() {
     if (!fp) return;
     char buf[300];
     while (fgets(buf, sizeof(buf), fp)) {
-        struct Transaction *newT = (struct Transaction*)malloc(sizeof(struct Transaction));
+        struct Transaction *newT = (struct Transaction*)calloc(1, sizeof(struct Transaction));
         long t;
-        sscanf(buf, "%d|%19[^|]|%f|%f|%ld|%d|%49[^\n]", &newT->accountNumber, newT->transactionType, &newT->amount, &newT->balanceAfter, &t, &newT->recipientAccountNumber, newT->recipientName);
+        int n = sscanf(buf, "%d|%19[^|]|%f|%f|%ld|%d|%49[^\n]", &newT->accountNumber, newT->transactionType, &newT->amount, &newT->balanceAfter, &t, &newT->recipientAccountNumber, newT->recipientName);
+        if (n < 7) strcpy(newT->recipientName, "");
         newT->timestamp = (time_t)t;
         newT->next = transactionHead;
         transactionHead = newT;
