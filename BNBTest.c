@@ -6,6 +6,11 @@
 
 //I DON'T HAVE A PARTNER
 
+int generateAccountNumber(void);
+int checkWithdrawalLimit(int accountNumber);
+void calculateInterest(void);
+void resetMonthlyWithdrawals(void);
+
 // Define structure for user credentials
 struct User {
     char username[50];
@@ -28,6 +33,9 @@ struct Account {
     char name[50];
     float balance;
     char username[50];
+    char accountType[20];  // "Savings" or "Checking"
+    int monthlyWithdrawals;  // Track withdrawals for savings account
+    time_t lastInterestUpdate;  // Track when interest was last added
     struct Account* next;
 };
 
@@ -261,14 +269,49 @@ void signUp() {
     newUser->next = userHead;
     userHead = newUser;
     
-    // Create a corresponding account in the head list
+    // Select account type
+    printf("Select account type:\n");
+    printf("1. Savings Account (6%% annual interest, 4 withdrawals/month limit)\n");
+    printf("2. Checking Account (No interest, unlimited withdrawals)\n");
+    printf("Enter your choice: ");
+    int accTypeChoice;
+    do {
+        if (scanf("%d", &accTypeChoice) != 1) {
+            printf("Invalid input! Please enter 1 or 2: ");
+            while(getchar() != '\n'); // Clear input buffer
+            continue;
+        }
+        while(getchar() != '\n'); // Clear input buffer
+        
+        if (accTypeChoice != 1 && accTypeChoice != 2) {
+            printf("Invalid choice! Please enter 1 or 2: ");
+            continue;
+        }
+        break;
+    } while (1);
+
     struct Account* newAccount = (struct Account*)malloc(sizeof(struct Account));
+    if (newAccount == NULL) {
+        printf("Memory allocation failed!\n");
+        free(newUser);
+        return;
+    }
+
     newAccount->accountNumber = newAccNo;
     strcpy(newAccount->name, newUser->firstName);
     strcat(newAccount->name, " ");
     strcat(newAccount->name, newUser->lastName);
     newAccount->balance = 0.0;
     strcpy(newAccount->username, newUser->username);
+    newAccount->monthlyWithdrawals = 0;
+    newAccount->lastInterestUpdate = time(NULL);
+
+    if (accTypeChoice == 1) {
+        strcpy(newAccount->accountType, "Savings");
+    } else {
+        strcpy(newAccount->accountType, "Checking");
+    }
+
     newAccount->next = head;
     head = newAccount;
     
@@ -455,6 +498,14 @@ void withdraw() {
     
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) {
+            // Check withdrawal limit for savings account
+            if (strcmp(temp->accountType, "Savings") == 0) {
+                if (temp->monthlyWithdrawals >= 4) {
+                    printf("Monthly withdrawal limit (4) reached for savings account!\n");
+                    return;
+                }
+            }
+            
             printf("Enter amount to withdraw: ");
             if (scanf("%f", &amount) != 1 || amount <= 0) {
                 printf("Invalid amount! Please enter a positive number.\n");
@@ -464,13 +515,22 @@ void withdraw() {
             
             if (amount > temp->balance) {
                 printf("Insufficient balance!\n");
-            } else {
-                temp->balance -= amount;
-                printf("Withdrawal successful! New Balance: %.2f\n", temp->balance);
-                
-                // Record transaction
-                addTransaction(currentUserAccountNo, "Withdrawal", amount, temp->balance, 0, "");
+                return;
             }
+            
+            // Process withdrawal
+            temp->balance -= amount;
+            
+            // Update monthly withdrawals count for savings account
+            if (strcmp(temp->accountType, "Savings") == 0) {
+                temp->monthlyWithdrawals++;
+                printf("Monthly withdrawals used: %d/4\n", temp->monthlyWithdrawals);
+            }
+            
+            printf("Withdrawal successful! New Balance: %.2f\n", temp->balance);
+            
+            // Record transaction
+            addTransaction(currentUserAccountNo, "Withdrawal", amount, temp->balance, 0, "");
             return;
         }
         temp = temp->next;
@@ -563,6 +623,13 @@ void transfer() {
         return;
     }
     
+    if (strcmp(fromAcc->accountType, "Savings") == 0) {
+        if (!checkWithdrawalLimit(currentUserAccountNo)) {
+            return;
+        }
+        fromAcc->monthlyWithdrawals++;
+    }
+    
     if (amount > fromAcc->balance) {
         printf("Insufficient balance!\n");
         return;
@@ -634,7 +701,10 @@ void saveAccountsToFile() {
     if (!fp) return;
     struct Account *temp = head;
     while (temp) {
-        fprintf(fp, "%d|%s|%.2f|%s\n", temp->accountNumber, temp->name, temp->balance, temp->username);
+        fprintf(fp, "%d|%s|%.2f|%s|%s|%d|%ld\n", 
+            temp->accountNumber, temp->name, temp->balance, 
+            temp->username, temp->accountType, temp->monthlyWithdrawals,
+            (long)temp->lastInterestUpdate);
         temp = temp->next;
     }
     fclose(fp);
@@ -644,10 +714,14 @@ void saveAccountsToFile() {
 void loadAccountsFromFile() {
     FILE *fp = fopen("accounts.txt", "r");
     if (!fp) return;
-    char buf[200];
+    char buf[300];
     while (fgets(buf, sizeof(buf), fp)) {
         struct Account *newAcc = (struct Account*)calloc(1, sizeof(struct Account));
-        sscanf(buf, "%d|%49[^|]|%f|%49[^\n]", &newAcc->accountNumber, newAcc->name, &newAcc->balance, newAcc->username);
+        long t;
+        sscanf(buf, "%d|%49[^|]|%f|%49[^|]|%19[^|]|%d|%ld", 
+            &newAcc->accountNumber, newAcc->name, &newAcc->balance, 
+            newAcc->username, newAcc->accountType, &newAcc->monthlyWithdrawals, &t);
+        newAcc->lastInterestUpdate = (time_t)t;
         newAcc->next = head;
         head = newAcc;
     }
@@ -1105,6 +1179,114 @@ void deleteUserAccount() {
     saveAllData();
 }
 
+// Function to view specific user information
+void viewSpecificUser() {
+    int accNo;
+    struct User* temp = userHead;
+    
+    printf("\nEnter account number to view: ");
+    scanf("%d", &accNo);
+    while(getchar() != '\n');
+    
+    while (temp != NULL) {
+        if (temp->accountNumber == accNo) {
+            printf("\n=== User Information ===\n");
+            printf("------------------------------------------\n");
+            printf("Username: %s\n", temp->username);
+            printf("Full Name: %s %s\n", temp->firstName, temp->lastName);
+            printf("Address: %s\n", temp->address);
+            printf("Phone: %s\n", temp->phoneNumber);
+            printf("Account Number: %d\n", temp->accountNumber);
+            printf("Has Active Loan: %s\n", temp->hasActiveLoan ? "Yes" : "No");
+            if (temp->hasActiveLoan) {
+                printf("Loan Balance: %.2f\n", temp->loanBalance);
+            }
+            printf("Account Status: %s\n", temp->isAdmin == 2 ? "Restricted" : "Active");
+            printf("------------------------------------------\n");
+            return;
+        }
+        temp = temp->next;
+    }
+    printf("Account not found!\n");
+}
+
+// Function to check withdrawal limit for savings account
+int checkWithdrawalLimit(int accountNumber) {
+    struct Account* temp = head;
+    while (temp != NULL) {
+        if (temp->accountNumber == accountNumber) {
+            if (strcmp(temp->accountType, "Savings") == 0) {
+                if (temp->monthlyWithdrawals >= 4) {
+                    printf("Monthly withdrawal limit reached for savings account!\n");
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        temp = temp->next;
+    }
+    return 0;
+}
+
+// Function to display account information
+void displayAccountInfo() {
+    if (!verifyPIN()) return;
+    
+    struct Account* temp = head;
+    
+    while (temp != NULL) {
+        if (temp->accountNumber == currentUserAccountNo) {
+            printf("\n=== Account Information ===\n");
+            printf("Account Number: %d\n", temp->accountNumber);
+            printf("Account Type: %s\n", temp->accountType);
+            printf("Current Balance: %.2f\n", temp->balance);
+            
+            if (strcmp(temp->accountType, "Savings") == 0) {
+                printf("Monthly Withdrawals Used: %d/4\n", temp->monthlyWithdrawals);
+                printf("Next Interest Update: %s", ctime(&temp->lastInterestUpdate));
+            }
+            
+            return;
+        }
+        temp = temp->next;
+    }
+    printf("Account not found!\n");
+}
+
+// Function to calculate and add interest for savings accounts
+void calculateInterest() {
+    struct Account* temp = head;
+    time_t currentTime = time(NULL);
+    
+    while (temp != NULL) {
+        if (strcmp(temp->accountType, "Savings") == 0) {
+            // Check if it's been a year since last interest update
+            if (difftime(currentTime, temp->lastInterestUpdate) >= 31536000) { // 31536000 seconds = 1 year
+                float interest = temp->balance * 0.06; // 6% interest
+                temp->balance += interest;
+                temp->lastInterestUpdate = currentTime;
+                
+                // Record interest transaction
+                addTransaction(temp->accountNumber, "Interest", interest, temp->balance, 0, "");
+                
+                printf("Interest of %.2f added to account %d\n", interest, temp->accountNumber);
+            }
+        }
+        temp = temp->next;
+    }
+}
+
+// Function to reset monthly withdrawal count for all savings accounts
+void resetMonthlyWithdrawals(void) {
+    struct Account* temp = head;
+    while (temp != NULL) {
+        if (strcmp(temp->accountType, "Savings") == 0) {
+            temp->monthlyWithdrawals = 0;
+        }
+        temp = temp->next;
+    }
+}
+
 int main() {
     srand(time(NULL));  // Initialize random number generator
     int choice, loggedIn = 0;
@@ -1114,6 +1296,8 @@ int main() {
 
     // Load data from files
     loadAllData();
+    
+    time_t lastInterestCheck = time(NULL);
     
     while (1) {
         if (!loggedIn) {
@@ -1141,40 +1325,44 @@ int main() {
             }
         } else {
             if (isAdmin == 1) {  // Admin menu
-                printf("\n===== Admin Dashboard =====\n");
-                printf("1. View All Users\n");
-                printf("2. Edit User Information\n");
-                printf("3. View User Transactions\n");
-                printf("4. Restrict/Unrestrict User\n");
-                printf("5. Delete User Account\n");
-                printf("6. Logout\n");
-                printf("Enter your choice: ");
-                scanf("%d", &choice);
-                
-                switch (choice) {
-                    case 1:
-                        viewAllUsers();
-                        break;
-                    case 2:
-                        editUserInfo();
-                        break;
-                    case 3:
-                        viewUserTransactions();
-                        break;
-                    case 4:
-                        toggleUserRestriction();
-                        break;
-                    case 5:
-                        deleteUserAccount();
-                        break;
-                    case 6:
-                        loggedIn = 0;
-                        printf("Logged out successfully!\n");
-                        break;
-                    default:
-                        printf("Invalid choice! Please try again.\n");
-                }
-            } else {  // Regular user menu
+			    printf("\n===== Admin Dashboard =====\n");
+			    printf("1. View All Users\n");
+			    printf("2. View Specific User\n");
+			    printf("3. Edit User Information\n");
+			    printf("4. View User Transactions\n");
+			    printf("5. Restrict/Unrestrict User\n");
+			    printf("6. Delete User Account\n");
+			    printf("7. Logout\n");
+			    printf("Enter your choice: ");
+			    scanf("%d", &choice);
+			    
+			    switch (choice) {
+			        case 1:
+			            viewAllUsers();
+			            break;
+			        case 2:
+			            viewSpecificUser();
+			            break;
+			        case 3:
+			            editUserInfo();
+			            break;
+			        case 4:
+			            viewUserTransactions();
+			            break;
+			        case 5:
+			            toggleUserRestriction();
+			            break;
+			        case 6:
+			            deleteUserAccount();
+			            break;
+			        case 7:
+			            loggedIn = 0;
+			            printf("Logged out successfully!\n");
+			            break;
+			        default:
+			            printf("Invalid choice! Please try again.\n");
+			    }
+			} else {  // Regular user menu
                 printf("\n===== Bank System Menu =====\n");
                 printf("1. Deposit\n");
                 printf("2. Withdraw\n");
@@ -1184,9 +1372,22 @@ int main() {
                 printf("6. Pay Loan\n");
                 printf("7. Check Loan Status\n");
                 printf("8. View Transaction History\n");
-                printf("9. Logout\n");
+                printf("9. Display Account Information\n");
+                printf("10. Logout\n");
                 printf("Enter your choice: ");
                 scanf("%d", &choice);
+            
+                time_t currentTime = time(NULL);
+                if (difftime(currentTime, lastInterestCheck) >= 86400) { // Check daily
+                    calculateInterest();
+                    lastInterestCheck = currentTime;
+                    
+                    // Reset monthly withdrawals on the first day of each month
+                    struct tm* timeinfo = localtime(&currentTime);
+                    if (timeinfo->tm_mday == 1) {
+                        resetMonthlyWithdrawals();
+                    }
+                }
             
                 switch (choice) {
                     case 1: 
@@ -1219,7 +1420,10 @@ int main() {
                     case 8:
                         viewTransactionHistory();
                         break;
-                    case 9: 
+                    case 9:
+                        displayAccountInfo();
+                        break;
+                    case 10: 
                         printf("Would you like a receipt of your transactions? (Y/N): ");
                         scanf(" %c", &receiptChoice);
                         while(getchar() != '\n');
