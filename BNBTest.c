@@ -6,6 +6,14 @@
 
 //I DON'T HAVE A PARTNER
 
+void clearConsole() {
+#ifdef _WIN32
+    system("cls");
+#else
+    system("clear");
+#endif
+}
+
 int generateAccountNumber(void);
 int checkWithdrawalLimit(int accountNumber);
 void calculateInterest(void);
@@ -188,15 +196,18 @@ void generateReceipt(int accountNumber) {
 
 // Function to sign up
 void signUp() {
+	clearConsole();
     struct User* newUser;
     struct User* temp;
     int pin;
     
     newUser = (struct User*)malloc(sizeof(struct User));
-    printf("\n=== Sign Up ===\n");
+    printf("========================\n");
+    printf("        \033[1;33mSIGN UP\033[0m         \n");
+    printf("========================\n");
     
     // Get personal information
-    printf("Enter First Name: ");
+    printf("\nEnter First Name: ");
     scanf("%s", newUser->firstName);
     while(getchar() != '\n');
     
@@ -221,8 +232,10 @@ void signUp() {
     temp = userHead;
     while (temp != NULL) {
         if (strcmp(temp->username, newUser->username) == 0) {
-            printf("Username already exists! Please try again.\n");
+            printf("\n\033[1;31mUsername already exists! Please try again.\033[0m \n");
             free(newUser);
+            printf("\nEnter any key to proceed...");
+        	getch();
             return;
         }
         temp = temp->next;
@@ -230,22 +243,23 @@ void signUp() {
     
     // Get password
     do {
-        printf("Create Password (min 8 chars, must contain uppercase, lowercase, and number): ");
+        printf("\nCreate Password (min 8 chars, must contain uppercase, lowercase, and number): ");
         scanf("%s", newUser->password);
         while(getchar() != '\n');
         if (!isStrongPassword(newUser->password)) {
-            printf("Password is not strong enough! Please try again.\n");
+            printf("\n\033[1;31mPassword is not strong enough! Please try again.\033[0m \n");
+            
         }
     } while (!isStrongPassword(newUser->password));
     
     // Get PIN
     do {
-        printf("Create 4-digit PIN: ");
+        printf("\nCreate 4-digit PIN: ");
         scanf("%d", &pin);
         while(getchar() != '\n');
         
         if (pin < 1000 || pin > 9999) {
-            printf("PIN must be exactly 4 digits! Please try again.\n");
+            printf("\n\033[1;31mPIN must be exactly 4 digits! Please try again.\033[0m\n");
         } else {
             newUser->pin = pin;
             break;
@@ -270,21 +284,21 @@ void signUp() {
     userHead = newUser;
     
     // Select account type
-    printf("Select account type:\n");
+    printf("\n\033[1;33mSelect Account Type\033[0m\n");
     printf("1. Savings Account (6%% annual interest, 4 withdrawals/month limit)\n");
     printf("2. Checking Account (No interest, unlimited withdrawals)\n");
     printf("Enter your choice: ");
     int accTypeChoice;
     do {
         if (scanf("%d", &accTypeChoice) != 1) {
-            printf("Invalid input! Please enter 1 or 2: ");
+            printf("\n\033[1;31mError:\033[0m Invalid input! Please enter 1 or 2: ");
             while(getchar() != '\n'); // Clear input buffer
             continue;
         }
         while(getchar() != '\n'); // Clear input buffer
         
         if (accTypeChoice != 1 && accTypeChoice != 2) {
-            printf("Invalid choice! Please enter 1 or 2: ");
+            printf("\033[1;31mError:\033[0m Invalid choice! Please enter 1 or 2: ");
             continue;
         }
         break;
@@ -321,41 +335,51 @@ void signUp() {
     // Record account creation as a transaction
     addTransaction(newAccNo, "Account Creation", 0.0, 0.0, 0, "");
     
-    printf("\n=== Account Created Successfully ===\n");
-    printf("Your Account Number: %d\n", newAccNo);
-    printf("Please keep your account number safe!\n");
+    clearConsole();
+    printf("\n=== \033[1;32mAccount Created Successfully!\033[0m ===\n");
+    printf("\nYour Account Number: \033[1;32m%d\033[0m\n", newAccNo);
+    printf("\nPlease keep your account number safe!\n");
     printf("You can now login using your account number.\n");
+    printf("\nEnter any key to proceed...");
+    getchar();
 }
 
-// Function to login
 // Function to login
 int login(char* username) {
     int accountNo;
     char password[50];
     struct User* temp;
-    
-    printf("\n=== Login ===\n");
-    printf("Enter Account Number: ");
+    clearConsole();
+    printf("========================\n");
+    printf("        \033[1;33mLOGIN\033[0m         \n");
+    printf("========================\n");
+    printf("\nEnter Account Number: ");
     if (scanf("%d", &accountNo) != 1) {
-        printf("Invalid account number format!\n");
+    	printf("\033[1;31m\nInvalid account number format!\033[0m\n");
         while(getchar() != '\n');
+        printf("\nEnter any key to proceed...");
+        getch();
         return -1;
     }
     while(getchar() != '\n');
     
     // Check for built-in admin account
     if (accountNo == 123123) {
-        printf("Enter Password: ");
+        printf("\nEnter Password: ");
         scanf("%s", password);
         while(getchar() != '\n');
         
         if (strcmp(password, "Admin123!") == 0) {
             strcpy(username, "admin");
             currentUserAccountNo = 123123;
-            printf("Admin login successful!\n");
+            printf("\033[1;32m\nAdmin login successful!\033[0m\n");
+            printf("\nEnter any key to proceed...");
+			getch();
             return 1;  // Return 1 for admin
         } else {
-            printf("Invalid password!\n");
+        	printf("\033[1;31m\nInvalid password!\033[0m\n");
+		    printf("\nEnter any key to proceed...");
+		    getch();
             return -1;
         }
     }
@@ -369,24 +393,31 @@ int login(char* username) {
                 return -1;
             }
             
-            printf("Enter Password: ");
+            printf("\nEnter Password: ");
             scanf("%s", password);
             while(getchar() != '\n');
             
             if (strcmp(temp->password, password) == 0) {
                 strcpy(username, temp->username);
                 currentUserAccountNo = accountNo;
-                printf("Login successful!\n");
-                printf("Welcome, %s %s!\n", temp->firstName, temp->lastName);
+                printf("\033[1;32m\nLogin successful!\033[0m\n");
+                printf("\nWelcome, %s %s!\n", temp->firstName, temp->lastName);
+			    printf("\nEnter any key to proceed...");
+			    getch();
+                
                 return temp->isAdmin;
             } else {
-                printf("Invalid password!\n");
+                printf("\033[1;31m\nInvalid password!\033[0m\n");
+			    printf("\nEnter any key to proceed...");
+			    getch();
                 return -1;
             }
         }
         temp = temp->next;
     }
-    printf("Account not found!\n");
+    printf("\033[1;31m\nAccount not found!\033[0m\n");
+    printf("\nEnter any key to proceed...");
+    getch();
     return -1;
 }
 
@@ -440,14 +471,18 @@ int verifyPIN() {
     }
     
     if (!found) {
-        printf("User account not found!\n");
+        printf("\n\033[1;31mUser account not found!\033[0m\n");
+        printf("\nEnter any key to proceed...");
+    	getch();
         return 0;
     }
     
-    printf("Enter PIN: ");
+    printf("\nEnter PIN: ");
     if (scanf("%d", &pin) != 1) {
-        printf("Invalid PIN format!\n");
+        printf("\n\033[1;31mInvalid PIN format!\033[0m\n");
         while(getchar() != '\n');
+        printf("\nEnter any key to proceed...");
+    	getch();
         return 0;
     }
     while(getchar() != '\n');
@@ -455,7 +490,9 @@ int verifyPIN() {
     if (temp->pin == pin) {
         return 1;
     } else {
-        printf("Invalid PIN!\n");
+        printf("\n\033[1;31mInvalid PIN!\033[0m\n");
+        printf("\nEnter any key to proceed...");
+    	getch();
         return 0;
     }
 }
@@ -466,21 +503,28 @@ void deposit() {
     
     float amount;
     struct Account* temp = head;
-    
+    clearConsole();
+    printf("============================================\n");
+    printf("              \033[1;33mDEPOSIT MONEY\033[0m                \n");
+    printf("============================================\n");
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) {
             printf("Enter amount to deposit: ");
             if (scanf("%f", &amount) != 1 || amount <= 0) {
-                printf("Invalid amount! Please enter a positive number.\n");
+                printf("\n\033[1;31mInvalid amount! Please enter a positive number.\033[0m\n");
+		        printf("\nEnter any key to proceed...");
+		    	getch();
                 while(getchar() != '\n'); // Clear input buffer
                 return;
             }
             
             temp->balance += amount;
-            printf("Amount deposited successfully! New Balance: %.2f\n", temp->balance);
+            printf("\n\033[1;32mAmount deposited successfully!\033[0m \n\nNew Balance: \033[1;36m%.2f\033[0m \n\n", temp->balance);
             
             // Record transaction
             addTransaction(currentUserAccountNo, "Deposit", amount, temp->balance, 0, "");
+            printf("Enter to proceed...");
+            getch();
             return;
         }
         temp = temp->next;
@@ -492,65 +536,78 @@ void deposit() {
 // Function to withdraw money
 void withdraw() {
     if (!verifyPIN()) return;
-    
-    float amount;
+
+    clearConsole();
+    printf("============================================\n");
+    printf("                \033[1;33mWITHDRAW MONEY\033[0m                \n");
+    printf("============================================\n");
+
     struct Account* temp = head;
-    
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) {
-            // Check withdrawal limit for savings account
+            // Immediately check withdrawal/transfer limit for savings account
             if (strcmp(temp->accountType, "Savings") == 0) {
-                if (temp->monthlyWithdrawals >= 4) {
-                    printf("Monthly withdrawal limit (4) reached for savings account!\n");
+                int left = 4 - temp->monthlyWithdrawals;
+                if (left <= 0) {
+                    printf("\n\033[1;31mMonthly withdrawal/transfer limit (4) reached for savings account!\033[0m\n");
+                    printf("\nEnter any key to proceed...");
+                    getch();
                     return;
+                } else {
+                    printf("\n\033[1;36mWithdrawals/Transfers left this month: \033[1;32m%d\033[0m\n\n", left);
                 }
             }
-            
+
+            float amount;
             printf("Enter amount to withdraw: ");
             if (scanf("%f", &amount) != 1 || amount <= 0) {
-                printf("Invalid amount! Please enter a positive number.\n");
-                while(getchar() != '\n'); // Clear input buffer
+                printf("\n\033[1;31mInvalid amount! Please enter a positive number.\033[0m\n");
+                printf("\nEnter any key to proceed...");
+                getch();
+                while(getchar() != '\n');
                 return;
             }
-            
+
             if (amount > temp->balance) {
-                printf("Insufficient balance!\n");
+                printf("\033[1;31mInsufficient balance!\033[0m\n");
+                printf("\nEnter any key to proceed...");
+                getch();
                 return;
             }
-            
-            // Process withdrawal
+
             temp->balance -= amount;
-            
-            // Update monthly withdrawals count for savings account
             if (strcmp(temp->accountType, "Savings") == 0) {
                 temp->monthlyWithdrawals++;
-                printf("Monthly withdrawals used: %d/4\n", temp->monthlyWithdrawals);
+                printf("\nMonthly withdrawals/transfers used: \033[1;32m%d\033[0m/4\n\n", temp->monthlyWithdrawals);
+                printf("Withdrawals/Transfers left this month: \033[1;36m%d\033[0m\n", 4 - temp->monthlyWithdrawals);
             }
-            
-            printf("Withdrawal successful! New Balance: %.2f\n", temp->balance);
-            
-            // Record transaction
+            printf("\n\033[1;32mWithdrawal successful!\033[0m \n\nNew Balance: \033[1;36m%.2f\033[0m\n", temp->balance);
             addTransaction(currentUserAccountNo, "Withdrawal", amount, temp->balance, 0, "");
+            printf("\nEnter any key to proceed...");
+            getch();
             return;
         }
         temp = temp->next;
     }
-    
-    printf("Account not found!\n");
+    printf("\033[1;31mAccount not found!\033[0m\n");
+    pauseConsole();
 }
 
 // Function to check balance
 void checkBalance() {
     if (!verifyPIN()) return;
-    
+    clearConsole();
     struct Account* temp = head;
     
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) {
-            printf("\n=== Account Information ===\n");
-            printf("Account Number: %d\n", temp->accountNumber);
-            printf("Current Balance: %.2f\n", temp->balance);
-            
+            printf("============================================\n");
+		    printf("             \033[1;33mACCOUNT INFORMATION\033[0m                \n");
+		    printf("============================================\n");
+            printf("\nAccount Number: \033[1;36m%d\033[0m\n", temp->accountNumber);
+            printf("\nCurrent Balance: \033[1;36m%.2f\033[0m\n", temp->balance);
+            printf("\nEnter any key to proceed...");
+            getch();
             // Record balance check as a transaction
             addTransaction(currentUserAccountNo, "Balance Check", 0.0, temp->balance, 0, "");
             return;
@@ -581,65 +638,111 @@ void displayAccounts() {
 // Function to transfer money between accounts
 void transfer() {
     if (!verifyPIN()) return;
-    
-    int toAccNo;
-    float amount;
-    struct Account *fromAcc = NULL, *toAcc = NULL;
-    struct Account* temp;
+
+    clearConsole();
+    printf("============================================\n");
+    printf("               \033[1;33mTRANSFER MONEY\033[0m                \n");
+    printf("============================================\n");
+
+    struct Account *fromAcc = NULL, *toAcc = NULL, *temp = head;
     char recipientName[50] = "";
-    
-    printf("Enter recipient's account number: ");
-    if (scanf("%d", &toAccNo) != 1) {
-        printf("Invalid account number!\n");
-        while(getchar() != '\n'); // Clear input buffer
-        return;
-    }
-    
-    // Check if trying to transfer to the same account
-    if (toAccNo == currentUserAccountNo) {
-        printf("Cannot transfer to the same account!\n");
-        return;
-    }
-    
-    temp = head;
+
+    // Find the sender's account
     while (temp != NULL) {
-        if (temp->accountNumber == currentUserAccountNo) fromAcc = temp;
-        if (temp->accountNumber == toAccNo) {
-            toAcc = temp;
-            strcpy(recipientName, temp->name);
+        if (temp->accountNumber == currentUserAccountNo) {
+            fromAcc = temp;
+            break;
         }
         temp = temp->next;
     }
-    
-    if (toAcc == NULL) {
-        printf("Recipient account not found!\n");
+
+    if (fromAcc == NULL) {
+        printf("\033[1;31mAccount not found!\033[0m\n");
+        printf("\nEnter any key to proceed...");
+        getch();
         return;
     }
-    
-    printf("Enter amount to transfer: ");
-    if (scanf("%f", &amount) != 1 || amount <= 0) {
-        printf("Invalid amount! Please enter a positive number.\n");
-        while(getchar() != '\n'); // Clear input buffer
-        return;
-    }
-    
+
+    // Immediately check withdrawal/transfer limit for savings account
     if (strcmp(fromAcc->accountType, "Savings") == 0) {
-        if (!checkWithdrawalLimit(currentUserAccountNo)) {
+        int left = 4 - fromAcc->monthlyWithdrawals;
+        if (left <= 0) {
+            printf("\n\033[1;31mMonthly withdrawal/transfer limit (4) reached for savings account!\033[0m\n");
+            printf("\nEnter any key to proceed...");
+            getch();
             return;
+        } else {
+            printf("\n\033[1;36mWithdrawals/Transfers left this month: \033[1;32m%d\033[0m\n\n", left);
         }
-        fromAcc->monthlyWithdrawals++;
     }
-    
-    if (amount > fromAcc->balance) {
-        printf("Insufficient balance!\n");
+
+    int toAccNo;
+    float amount;
+
+    printf("Enter recipient's account number: ");
+    if (scanf("%d", &toAccNo) != 1) {
+        printf("\n\033[1;31mInvalid account number!\033[0m\n");
+        while(getchar() != '\n');
+        printf("\nEnter any key to proceed...");
+        getch();
         return;
     }
-    
+
+    if (toAccNo == currentUserAccountNo) {
+        printf("\n\033[1;31mCannot transfer to the same account!\033[0m\n");
+        printf("\nEnter any key to proceed...");
+        getch();
+        return;
+    }
+
+    // Find the recipient's account
+    temp = head;
+    while (temp != NULL) {
+        if (temp->accountNumber == toAccNo) {
+            toAcc = temp;
+            strcpy(recipientName, temp->name);
+            break;
+        }
+        temp = temp->next;
+    }
+
+    if (toAcc == NULL) {
+        printf("\n\033[1;31mRecipient account not found!\033[0m\n");
+        printf("\nEnter any key to proceed...");
+        getch();
+        return;
+    }
+
+    printf("\nEnter amount to transfer: ");
+    if (scanf("%f", &amount) != 1 || amount <= 0) {
+        printf("\n\033[1;31mInvalid amount! Please enter a positive number.\033[0m\n");
+        while(getchar() != '\n');
+        printf("\nEnter any key to proceed...");
+        getch();
+        return;
+    }
+
+    if (amount > fromAcc->balance) {
+        printf("\n\033[1;31mInsufficient balance!\033[0m\n");
+        printf("\nEnter any key to proceed...");
+        getch();
+        return;
+    }
+
+    // Update withdrawal/transfer count for savings account
+    if (strcmp(fromAcc->accountType, "Savings") == 0) {
+        fromAcc->monthlyWithdrawals++;
+        printf("\nMonthly withdrawals/transfers used: \033[1;32m%d\033[0m/4\n\n", fromAcc->monthlyWithdrawals);
+        printf("Withdrawals/Transfers left this month: \033[1;36m%d\033[0m\n", 4 - fromAcc->monthlyWithdrawals);
+    }
+
     fromAcc->balance -= amount;
     toAcc->balance += amount;
-    printf("Transfer successful!\n");
-    printf("Your new balance: %.2f\n", fromAcc->balance);
-    
+    printf("\n\033[1;32mTransfer successful!\033[0m\n");
+    printf("\nYour new balance: \033[1;36m%.2f\033[0m\n", fromAcc->balance);
+    printf("\nEnter any key to proceed...");
+    getch();
+
     // Get sender's name for the recipient's receipt
     char senderName[50] = "";
     temp = head;
@@ -650,7 +753,7 @@ void transfer() {
         }
         temp = temp->next;
     }
-    
+
     // Record transactions for both accounts
     addTransaction(currentUserAccountNo, "Transfer Out", amount, fromAcc->balance, toAccNo, recipientName);
     addTransaction(toAccNo, "Transfer In", amount, toAcc->balance, currentUserAccountNo, senderName);
@@ -777,7 +880,10 @@ int checkLoanEligibility() {
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) {
             if (temp->hasActiveLoan) {
-                printf("You already have an active loan. Please pay it off first.\n");
+			    printf("\n=== \033[1;32mAPPLY LOAN\033[0m \033[1;31mDENIED\033[0m ===\n");
+                printf("\n\033[1;31mYou already have an active loan. Please pay it off first.\033[0m \n");
+                printf("\nEnter any key to proceed...");
+        		getch();
                 return 0;
             }
             return 1;
@@ -790,6 +896,7 @@ int checkLoanEligibility() {
 // Function to apply for a loan
 void applyLoan() {
     if (!verifyPIN()) return;
+    clearConsole();
     
     float loanAmount;
     struct User* temp = userHead;
@@ -823,10 +930,15 @@ void applyLoan() {
         return;
     }
     
-    printf("Enter loan amount: ");
+    printf("========================\n");
+    printf("      \033[1;33mAPPLY LOAN\033[0m         \n");
+    printf("========================\n");
+    printf("\nEnter loan amount: ");
     if (scanf("%f", &loanAmount) != 1 || loanAmount <= 0) {
-        printf("Invalid amount! Please enter a positive number.\n");
+        printf("\n\033[1;31mInvalid amount! Please enter a positive number.\033[0m\n");
         while(getchar() != '\n');
+        printf("\nEnter any key to proceed...");
+        getch();
         return;
     }
     
@@ -843,10 +955,12 @@ void applyLoan() {
     // Record loan transaction
     addTransaction(currentUserAccountNo, "Loan", loanAmount, acc->balance, 0, "");
     
-    printf("\n=== Loan Approved ===\n");
-    printf("Loan Amount: %.2f\n", loanAmount);
-    printf("Total Amount to Pay (with 20%% interest): %.2f\n", totalLoan);
-    printf("Amount has been added to your account balance.\n");
+    printf("\n\033[1;32mLoan Approved\033[0m \n");
+    printf("\nLoan Amount: \033[1;36m%.2f\033[0m\n", loanAmount);
+    printf("\nTotal Amount to Pay (with 20%% interest): \033[1;36m%.2f\033[0m\n", totalLoan);
+    printf("\n\033[1;32mAmount has been added to your account balance.\033[0m\n");
+    printf("\nEnter any key to proceed...");
+    getch();
     
     // Save changes to file
     saveAllData();
@@ -855,7 +969,7 @@ void applyLoan() {
 // Function to pay loan
 void payLoan() {
     if (!verifyPIN()) return;
-    
+    clearConsole();
     float paymentAmount;
     struct User* temp = userHead;
     struct Account* acc = NULL;
@@ -888,17 +1002,19 @@ void payLoan() {
         return;
     }
     
-    printf("\n=== Loan Payment ===\n");
-    printf("Current Loan Balance: %.2f\n", temp->loanBalance);
-    printf("Enter payment amount: ");
+    printf("========================\n");
+    printf("    \033[1;33mLOAN PAYMENT\033[0m         \n");
+    printf("========================\n");
+    printf("\nCurrent Loan Balance: \033[1;36m%.2f\033[0m\n", temp->loanBalance);
+    printf("\nEnter payment amount: ");
     if (scanf("%f", &paymentAmount) != 1 || paymentAmount <= 0) {
-        printf("Invalid amount! Please enter a positive number.\n");
+        printf("\n\033[1;33mInvalid amount! Please enter a positive number.\033[0m\n");
         while(getchar() != '\n');
         return;
     }
     
     if (paymentAmount > acc->balance) {
-        printf("Insufficient balance!\n");
+        printf("\n\033[1;31mInsufficient balance!\033[0m\n");
         return;
     }
     
@@ -911,7 +1027,7 @@ void payLoan() {
         // Return excess amount to user's balance
         acc->balance += excessAmount;
         paymentAmount = temp->loanBalance; // Adjust payment amount to actual loan balance
-        printf("Excess payment of %.2f has been returned to your account.\n", excessAmount);
+        printf("\n\033[1;32mExcess payment of %.2f has been returned to your account.\033[0m\n", excessAmount);
     }
     
     temp->loanBalance -= paymentAmount;
@@ -919,15 +1035,15 @@ void payLoan() {
     // Record loan payment transaction
     addTransaction(currentUserAccountNo, "Loan Payment", paymentAmount, acc->balance, 0, "");
     
-    printf("Payment successful!\n");
-    printf("Remaining loan balance: %.2f\n", temp->loanBalance);
-    printf("Current account balance: %.2f\n", acc->balance);
+    printf("\n\033[1;32mPayment successful!\033[0m\n");
+    printf("\nRemaining loan balance: \033[1;36m%.2f\033[0m \n", temp->loanBalance);
+    printf("\nCurrent account balance: \033[1;36m%.2f\033[0m \n", acc->balance);
     
     // Check if loan is fully paid
     if (temp->loanBalance <= 0) {
         temp->hasActiveLoan = 0;
         temp->loanBalance = 0;
-        printf("Congratulations! Your loan has been fully paid.\n");
+        printf("\n\033[1;32mCongratulations! Your loan has been fully paid.\033[0m\n");
     }
     
     // Save changes to file
@@ -937,53 +1053,81 @@ void payLoan() {
 // Function to check loan status
 void checkLoanStatus() {
     if (!verifyPIN()) return;
-    
+    clearConsole();
     struct User* temp = userHead;
+    struct Account* acc = head;
+
+    // Find the user
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) {
-            printf("\n=== Loan Status ===\n");
-            if (temp->hasActiveLoan) {
-                printf("You have an active loan.\n");
-                printf("Current Loan Balance: %.2f\n", temp->loanBalance);
-            } else {
-                printf("You don't have any active loans.\n");
-            }
-            return;
+            break;
         }
         temp = temp->next;
     }
-    printf("Account not found!\n");
+
+    // Find the user's account
+    while (acc != NULL) {
+        if (acc->accountNumber == currentUserAccountNo) {
+            break;
+        }
+        acc = acc->next;
+    }
+
+    printf("========================\n");
+    printf("      \033[1;33mLOAN STATUS\033[0m         \n");
+    printf("========================\n");
+
+    
+
+    if (temp != NULL) {
+        if (temp->hasActiveLoan) {
+            printf("\n\033[1;33mYou have an active loan.\033[0m\n");
+            if (acc != NULL) {
+		        printf("\nCurrent Balance: \033[1;36m%.2f\033[0m\n", acc->balance);
+		    } else {
+		        printf("\n\033[1;31mAccount not found!\033[0m\n");
+		        return;
+		    }
+            printf("\nCurrent Loan Balance: \033[1;36m%.2f\033[0m\n", temp->loanBalance);
+        } else {
+            printf("\n\033[1;32mYou don't have any active loans\033[0m.\n");
+        }
+    } else {
+        printf("\n\033[1;31mUser not found!\033[0m\n");
+    }
 }
 
 // Function to view transaction history
 void viewTransactionHistory() {
     if (!verifyPIN()) return;
-    
+    clearConsole();
     struct Transaction* temp = transactionHead;
     int found = 0;
     time_t currentTime = time(NULL);
     
-    printf("\n=== Transaction History ===\n");
-    printf("Date: %s", ctime(&currentTime));
-    printf("------------------------------------------\n");
+    printf("===================================\n");
+    printf("      \033[1;33mTRANSACTION HISTORY\033[0m         \n");
+    printf("===================================\n");
+    printf("\nDate: \033[1;37m%s\033[0m\n", ctime(&currentTime));
+    printf("\033[1;37m------------------------------------------\033[0m\n");
     
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) {
-            printf("Type: %s\n", temp->transactionType);
-            printf("Amount: %.2f\n", temp->amount);
-            printf("Balance After: %.2f\n", temp->balanceAfter);
+            printf("Type: \033[1;33m%s\033[0m\n", temp->transactionType);
+            printf("Amount: \033[1;36m%.2f\033[0m\n", temp->amount);
+            printf("Balance After: \033[1;36m%.2f\033[0m\n", temp->balanceAfter);
             
             // Add recipient information for transfers
             if (strcmp(temp->transactionType, "Transfer Out") == 0) {
-                printf("Recipient Account: %d\n", temp->recipientAccountNumber);
-                printf("Recipient Name: %s\n", temp->recipientName);
+                printf("Recipient Account: \033[1;33m%d\033[0m\n", temp->recipientAccountNumber);
+                printf("Recipient Name: \033[1;33m%s\033[0m\n", temp->recipientName);
             } else if (strcmp(temp->transactionType, "Transfer In") == 0) {
                 printf("Sender Account: %d\n", temp->recipientAccountNumber);
                 printf("Sender Name: %s\n", temp->recipientName);
             }
             
-            printf("Time: %s", ctime(&temp->timestamp));
-            printf("------------------------------------------\n");
+            printf("Time: \033[1;37m%s\033[0m", ctime(&temp->timestamp));
+            printf("\033[1;37m------------------------------------------\033[0m\n");
             found = 1;
         }
         temp = temp->next;
@@ -1217,7 +1361,7 @@ int checkWithdrawalLimit(int accountNumber) {
         if (temp->accountNumber == accountNumber) {
             if (strcmp(temp->accountType, "Savings") == 0) {
                 if (temp->monthlyWithdrawals >= 4) {
-                    printf("Monthly withdrawal limit reached for savings account!\n");
+                    printf("\n\033[1;31mMonthly withdrawal/Transfer limit reached for savings account!\033[0m\n");
                     return 0;
                 }
             }
@@ -1231,26 +1375,29 @@ int checkWithdrawalLimit(int accountNumber) {
 // Function to display account information
 void displayAccountInfo() {
     if (!verifyPIN()) return;
+    clearConsole();
     
     struct Account* temp = head;
     
     while (temp != NULL) {
         if (temp->accountNumber == currentUserAccountNo) {
-            printf("\n=== Account Information ===\n");
-            printf("Account Number: %d\n", temp->accountNumber);
-            printf("Account Type: %s\n", temp->accountType);
-            printf("Current Balance: %.2f\n", temp->balance);
+            printf("===================================\n");
+		    printf("      \033[1;33mACCOUNT INFORMATION\033[0m         \n");
+		    printf("===================================\n");
+            printf("\nAccount Number: \033[1;33m%d\033[0m\n", temp->accountNumber);
+            printf("\nAccount Type: \033[1;33m%s\033[0m\n", temp->accountType);
+            printf("\nCurrent Balance: \033[1;36m%.2f\033[0m\n", temp->balance);
             
             if (strcmp(temp->accountType, "Savings") == 0) {
-                printf("Monthly Withdrawals Used: %d/4\n", temp->monthlyWithdrawals);
-                printf("Next Interest Update: %s", ctime(&temp->lastInterestUpdate));
+                printf("\nMonthly Withdrawals Used: \033[1;32m%d\033[0m/4\n", temp->monthlyWithdrawals);
+                printf("\nNext Interest Update: \033[1;37m%s\033[0m", ctime(&temp->lastInterestUpdate));
             }
             
             return;
         }
         temp = temp->next;
     }
-    printf("Account not found!\n");
+    printf("\033[1;31mAccount not found!\033[0m\n");
 }
 
 // Function to calculate and add interest for savings accounts
@@ -1287,6 +1434,37 @@ void resetMonthlyWithdrawals(void) {
     }
 }
 
+void pauseConsole() {
+	
+    printf("\nPress Enter to continue...");
+    while(getchar() != '\n');
+}
+
+void printWelcomeBanner() {
+    printf("============================================\n");
+    printf("        \033[1;36mWELCOME TO BANCO NI BINS\033[0m         \n");
+    printf("============================================\n");
+    printf("        _.-'''''-._\n");
+    printf("      .'  _     _  '.\n");
+    printf("     /   (_)   (_)   \\\n");
+    printf("    |  ,           ,  |\n");
+    printf("    |  \\`.       .`/  |\n");
+    printf("     \\  '.`'\"\"'`.'  /\n");
+    printf("      '.  `'---'`  .'\n");
+    printf("        '-._____.-'\n");
+    printf("============================================\n");
+}
+
+void loadingAnimation() {
+    printf("Processing");
+    for (int i = 0; i < 3; i++) {
+        fflush(stdout);
+        sleep(1); // or Sleep(1000) on Windows
+        printf(".");
+    }
+    printf("\n");
+}
+
 int main() {
     srand(time(NULL));  // Initialize random number generator
     int choice, loggedIn = 0;
@@ -1301,12 +1479,15 @@ int main() {
     
     while (1) {
         if (!loggedIn) {
-            printf("\n=== Welcome to Banco Ni Bins ===\n");
+            clearConsole();
+            printWelcomeBanner();
             printf("1. Login\n");
             printf("2. Sign Up\n");
             printf("3. Exit\n");
+            printf("--------------------------------------------\n");
             printf("Enter your choice: ");
             scanf("%d", &choice);
+            while(getchar() != '\n');
             
             switch (choice) {
                 case 1:
@@ -1321,11 +1502,16 @@ int main() {
                     printf("Exiting...\n");
                     return 0;
                 default:
-                    printf("Invalid choice! Please try again.\n");
+                    printf("\n\033[1;31mInvalid choice! Please try again.\033[0m\n");
+                    printf("\nEnter any key to proceed...");
+			    	getch();
             }
         } else {
             if (isAdmin == 1) {  // Admin menu
-			    printf("\n===== Admin Dashboard =====\n");
+			    clearConsole();
+			    printf("============================================\n");
+			    printf("             \033[1;32mBANK SYSTEM MENU\033[0m              \n");
+			    printf("============================================\n");
 			    printf("1. View All Users\n");
 			    printf("2. View Specific User\n");
 			    printf("3. Edit User Information\n");
@@ -1335,7 +1521,7 @@ int main() {
 			    printf("7. Logout\n");
 			    printf("Enter your choice: ");
 			    scanf("%d", &choice);
-			    
+			
 			    switch (choice) {
 			        case 1:
 			            viewAllUsers();
@@ -1363,17 +1549,20 @@ int main() {
 			            printf("Invalid choice! Please try again.\n");
 			    }
 			} else {  // Regular user menu
-                printf("\n===== Bank System Menu =====\n");
-                printf("1. Deposit\n");
-                printf("2. Withdraw\n");
-                printf("3. Transfer\n");
-                printf("4. Check Balance\n");
-                printf("5. Apply for Loan\n");
-                printf("6. Pay Loan\n");
-                printf("7. Check Loan Status\n");
-                printf("8. View Transaction History\n");
-                printf("9. Display Account Information\n");
-                printf("10. Logout\n");
+                clearConsole();
+                printf("============================================\n");
+                printf("             \033[1;32mBANK SYSTEM MENU\033[0m              \n");
+                printf("============================================\n");
+                printf("1. Deposit\n\n");
+                printf("2. Withdraw\n\n");
+                printf("3. Transfer\n\n");
+                printf("4. Check Balance\n\n");
+                printf("5. Apply for Loan\n\n");
+                printf("6. Pay Loan\n\n");
+                printf("7. Check Loan Status\n\n");
+                printf("8. View Transaction History\n\n");
+                printf("9. Display Account Information\n\n");
+                printf("10. Logout\n\n");
                 printf("Enter your choice: ");
                 scanf("%d", &choice);
             
@@ -1412,16 +1601,24 @@ int main() {
                         break;
                     case 6:
                         payLoan();
+                        printf("\nEnter any key to proceed...");
+    					getch();
                         saveAllData();
                         break;
                     case 7:
                         checkLoanStatus();
+                        printf("\nEnter any key to proceed...");
+    					getch();
                         break;
                     case 8:
                         viewTransactionHistory();
+                        printf("\nEnter any key to proceed...");
+    					getch();
                         break;
                     case 9:
                         displayAccountInfo();
+                        printf("\nEnter any key to proceed...");
+    					getch();
                         break;
                     case 10: 
                         printf("Would you like a receipt of your transactions? (Y/N): ");
@@ -1437,7 +1634,9 @@ int main() {
                         printf("Logged out successfully!\n");
                         break;
                     default: 
-                        printf("Invalid choice! Please try again.\n");
+                    printf("\n\033[1;31mInvalid choice! Please try again.\033[0m\n");
+                    printf("\nEnter any key to proceed...");
+			    	getch();
                 }
             }
         }
