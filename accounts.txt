@@ -1,2 +1,3 @@
-122082|Vince2 Skibi|500.00|ajsbda
-120867|Vince Bernante|1500.00|Vince
+116520|Vince Bernante|0.00|Binx
+122082|Vince2 Skibi|14000.00|ajsbda
+120867|Vince Bernante|2500.00|Vince

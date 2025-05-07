@@ -1,0 +1,57 @@
+==========================================
+              BANCO NI BINS              
+==========================================
+
+Date: Wed May 07 19:05:51 2025
+Account Number: 122082
+Account Holder: Vince2 Skibi
+Current Balance: 4000.00
+
+Transaction History:
+------------------------------------------
+Type: Transfer Out
+Amount: 1000.00
+Balance After: 4000.00
+Recipient Account: 120867
+Recipient Name: Vince Bernante
+Time: Wed May 07 19:05:46 2025
+------------------------------------------
+Type: Withdrawal
+Amount: 500.00
+Balance After: 5000.00
+Time: Wed May 07 19:04:48 2025
+------------------------------------------
+Type: Deposit
+Amount: 5000.00
+Balance After: 5500.00
+Time: Wed May 07 19:04:34 2025
+------------------------------------------
+Type: Transfer In
+Amount: 300.00
+Balance After: 800.00
+Sender Account: 120867
+Sender Name: Vince Bernante
+Time: Mon Apr 21 16:13:36 2025
+------------------------------------------
+Type: Account Creation
+Amount: 0.00
+Balance After: 0.00
+Time: Mon Apr 21 16:08:47 2025
+------------------------------------------
+Type: Transfer In
+Amount: 500.00
+Balance After: 500.00
+Sender Account: 120867
+Sender Name: Vince Bernante
+Time: Mon Apr 21 16:09:29 2025
+------------------------------------------
+Type: Transfer Out
+Amount: 300.00
+Balance After: 500.00
+Recipient Account: 120867
+Recipient Name: Vince Bernante
+Time: Mon Apr 21 16:16:25 2025
+------------------------------------------
+
+Thank you for banking with Banco Ni Bins!
+==========================================
