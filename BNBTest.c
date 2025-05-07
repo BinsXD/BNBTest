@@ -300,9 +300,32 @@ int login(char* username) {
     }
     while(getchar() != '\n');
     
+    // Check for built-in admin account
+    if (accountNo == 123123) {
+        printf("Enter Password: ");
+        scanf("%s", password);
+        while(getchar() != '\n');
+        
+        if (strcmp(password, "Admin123!") == 0) {
+            strcpy(username, "admin");
+            currentUserAccountNo = 123123;
+            printf("Admin login successful!\n");
+            return 1;  // Return 1 for admin
+        } else {
+            printf("Invalid password!\n");
+            return -1;
+        }
+    }
+    
+    // Regular user login
     temp = userHead;
     while (temp != NULL) {
         if (temp->accountNumber == accountNo) {
+            if (temp->isAdmin == 2) {  // Check if user is restricted
+                printf("This account has been restricted. Please contact support.\n");
+                return -1;
+            }
+            
             printf("Enter Password: ");
             scanf("%s", password);
             while(getchar() != '\n');
@@ -858,6 +881,230 @@ void checkLoanStatus() {
     printf("Account not found!\n");
 }
 
+// Function to view transaction history
+void viewTransactionHistory() {
+    if (!verifyPIN()) return;
+    
+    struct Transaction* temp = transactionHead;
+    int found = 0;
+    time_t currentTime = time(NULL);
+    
+    printf("\n=== Transaction History ===\n");
+    printf("Date: %s", ctime(&currentTime));
+    printf("------------------------------------------\n");
+    
+    while (temp != NULL) {
+        if (temp->accountNumber == currentUserAccountNo) {
+            printf("Type: %s\n", temp->transactionType);
+            printf("Amount: %.2f\n", temp->amount);
+            printf("Balance After: %.2f\n", temp->balanceAfter);
+            
+            // Add recipient information for transfers
+            if (strcmp(temp->transactionType, "Transfer Out") == 0) {
+                printf("Recipient Account: %d\n", temp->recipientAccountNumber);
+                printf("Recipient Name: %s\n", temp->recipientName);
+            } else if (strcmp(temp->transactionType, "Transfer In") == 0) {
+                printf("Sender Account: %d\n", temp->recipientAccountNumber);
+                printf("Sender Name: %s\n", temp->recipientName);
+            }
+            
+            printf("Time: %s", ctime(&temp->timestamp));
+            printf("------------------------------------------\n");
+            found = 1;
+        }
+        temp = temp->next;
+    }
+    
+    if (!found) {
+        printf("No transactions found.\n");
+    }
+}
+
+// Function to view all users' information
+void viewAllUsers() {
+    struct User* temp = userHead;
+    printf("\n=== All Users Information ===\n");
+    printf("------------------------------------------\n");
+    
+    while (temp != NULL) {
+        printf("Username: %s\n", temp->username);
+        printf("Full Name: %s %s\n", temp->firstName, temp->lastName);
+        printf("Address: %s\n", temp->address);
+        printf("Phone: %s\n", temp->phoneNumber);
+        printf("Account Number: %d\n", temp->accountNumber);
+        printf("Has Active Loan: %s\n", temp->hasActiveLoan ? "Yes" : "No");
+        if (temp->hasActiveLoan) {
+            printf("Loan Balance: %.2f\n", temp->loanBalance);
+        }
+        printf("------------------------------------------\n");
+        temp = temp->next;
+    }
+}
+
+// Function to edit user information
+void editUserInfo() {
+    int accNo;
+    struct User* temp = userHead;
+    
+    printf("\nEnter account number to edit: ");
+    scanf("%d", &accNo);
+    while(getchar() != '\n');
+    
+    while (temp != NULL) {
+        if (temp->accountNumber == accNo) {
+            printf("\n=== Edit User Information ===\n");
+            printf("Current Information:\n");
+            printf("First Name: %s\n", temp->firstName);
+            printf("Last Name: %s\n", temp->lastName);
+            printf("Address: %s\n", temp->address);
+            printf("Phone: %s\n", temp->phoneNumber);
+            
+            printf("\nEnter new information (press Enter to keep current value):\n");
+            
+            char input[100];
+            printf("New First Name: ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) strcpy(temp->firstName, input);
+            
+            printf("New Last Name: ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) strcpy(temp->lastName, input);
+            
+            printf("New Address: ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) strcpy(temp->address, input);
+            
+            printf("New Phone Number: ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) strcpy(temp->phoneNumber, input);
+            
+            printf("\nUser information updated successfully!\n");
+            saveAllData();
+            return;
+        }
+        temp = temp->next;
+    }
+    printf("Account not found!\n");
+}
+
+// Function to view user's transaction history (admin version)
+void viewUserTransactions() {
+    int accNo;
+    struct Transaction* temp = transactionHead;
+    int found = 0;
+    
+    printf("\nEnter account number to view transactions: ");
+    scanf("%d", &accNo);
+    while(getchar() != '\n');
+    
+    printf("\n=== Transaction History for Account %d ===\n", accNo);
+    printf("------------------------------------------\n");
+    
+    while (temp != NULL) {
+        if (temp->accountNumber == accNo) {
+            printf("Type: %s\n", temp->transactionType);
+            printf("Amount: %.2f\n", temp->amount);
+            printf("Balance After: %.2f\n", temp->balanceAfter);
+            
+            if (strcmp(temp->transactionType, "Transfer Out") == 0) {
+                printf("Recipient Account: %d\n", temp->recipientAccountNumber);
+                printf("Recipient Name: %s\n", temp->recipientName);
+            } else if (strcmp(temp->transactionType, "Transfer In") == 0) {
+                printf("Sender Account: %d\n", temp->recipientAccountNumber);
+                printf("Sender Name: %s\n", temp->recipientName);
+            }
+            
+            printf("Time: %s", ctime(&temp->timestamp));
+            printf("------------------------------------------\n");
+            found = 1;
+        }
+        temp = temp->next;
+    }
+    
+    if (!found) {
+        printf("No transactions found for this account.\n");
+    }
+}
+
+// Function to restrict/unrestrict user
+void toggleUserRestriction() {
+    int accNo;
+    struct User* temp = userHead;
+    
+    printf("\nEnter account number to restrict/unrestrict: ");
+    scanf("%d", &accNo);
+    while(getchar() != '\n');
+    
+    while (temp != NULL) {
+        if (temp->accountNumber == accNo) {
+            if (accNo == 123123) {  // Prevent restricting admin account
+                printf("Cannot restrict admin account!\n");
+                return;
+            }
+            temp->isAdmin = temp->isAdmin == 2 ? 0 : 2;  // 2 represents restricted
+            printf("User %s has been %s\n", temp->username, 
+                   temp->isAdmin == 2 ? "restricted" : "unrestricted");
+            saveAllData();
+            return;
+        }
+        temp = temp->next;
+    }
+    printf("Account not found!\n");
+}
+
+// Function to delete user account
+void deleteUserAccount() {
+    int accNo;
+    struct User *temp = userHead, *prev = NULL;
+    struct Account *accTemp = head, *accPrev = NULL;
+    
+    printf("\nEnter account number to delete: ");
+    scanf("%d", &accNo);
+    while(getchar() != '\n');
+    
+    if (accNo == 123123) {  // Prevent deleting admin account
+        printf("Cannot delete admin account!\n");
+        return;
+    }
+    
+    // Delete from user list
+    while (temp != NULL) {
+        if (temp->accountNumber == accNo) {
+            if (prev == NULL) {
+                userHead = temp->next;
+            } else {
+                prev->next = temp->next;
+            }
+            free(temp);
+            break;
+        }
+        prev = temp;
+        temp = temp->next;
+    }
+    
+    // Delete from account list
+    while (accTemp != NULL) {
+        if (accTemp->accountNumber == accNo) {
+            if (accPrev == NULL) {
+                head = accTemp->next;
+            } else {
+                accPrev->next = accTemp->next;
+            }
+            free(accTemp);
+            break;
+        }
+        accPrev = accTemp;
+        accTemp = accTemp->next;
+    }
+    
+    printf("Account deleted successfully!\n");
+    saveAllData();
+}
+
 int main() {
     srand(time(NULL));  // Initialize random number generator
     int choice, loggedIn = 0;
@@ -893,63 +1140,103 @@ int main() {
                     printf("Invalid choice! Please try again.\n");
             }
         } else {
-		    printf("\n===== Bank System Menu =====\n");
-		    printf("1. Deposit\n");
-		    printf("2. Withdraw\n");
-		    printf("3. Transfer\n");
-		    printf("4. Check Balance\n");
-		    printf("5. Apply for Loan\n");
-		    printf("6. Pay Loan\n");
-		    printf("7. Check Loan Status\n");
-		    printf("8. Logout\n");
-		    printf("Enter your choice: ");
-		    scanf("%d", &choice);
-		
-		    switch (choice) {
-		        case 1: 
-		            deposit(); 
-		            saveAllData();
-		            break;
-		        case 2: 
-		            withdraw(); 
-		            saveAllData();
-		            break;
-		        case 3: 
-		            transfer(); 
-		            saveAllData();
-		            break;
-		        case 4: 
-		            checkBalance(); 
-		            saveAllData();
-		            break;
-		        case 5:
-		            applyLoan();
-		            saveAllData();
-		            break;
-		        case 6:
-		            payLoan();
-		            saveAllData();
-		            break;
-		        case 7:
-		            checkLoanStatus();
-		            break;
-		        case 8: 
-		            printf("Would you like a receipt of your transactions? (Y/N): ");
-		            scanf(" %c", &receiptChoice);
-		            while(getchar() != '\n');
-		            
-		            if (toupper(receiptChoice) == 'Y') {
-		                generateReceipt(currentUserAccountNo);
-		            }
-		            
-		            loggedIn = 0; 
-		            saveAllData();
-		            printf("Logged out successfully!\n");
-		            break;
-		        default: 
-		            printf("Invalid choice! Please try again.\n");
-		    }
-		}
+            if (isAdmin == 1) {  // Admin menu
+                printf("\n===== Admin Dashboard =====\n");
+                printf("1. View All Users\n");
+                printf("2. Edit User Information\n");
+                printf("3. View User Transactions\n");
+                printf("4. Restrict/Unrestrict User\n");
+                printf("5. Delete User Account\n");
+                printf("6. Logout\n");
+                printf("Enter your choice: ");
+                scanf("%d", &choice);
+                
+                switch (choice) {
+                    case 1:
+                        viewAllUsers();
+                        break;
+                    case 2:
+                        editUserInfo();
+                        break;
+                    case 3:
+                        viewUserTransactions();
+                        break;
+                    case 4:
+                        toggleUserRestriction();
+                        break;
+                    case 5:
+                        deleteUserAccount();
+                        break;
+                    case 6:
+                        loggedIn = 0;
+                        printf("Logged out successfully!\n");
+                        break;
+                    default:
+                        printf("Invalid choice! Please try again.\n");
+                }
+            } else {  // Regular user menu
+                printf("\n===== Bank System Menu =====\n");
+                printf("1. Deposit\n");
+                printf("2. Withdraw\n");
+                printf("3. Transfer\n");
+                printf("4. Check Balance\n");
+                printf("5. Apply for Loan\n");
+                printf("6. Pay Loan\n");
+                printf("7. Check Loan Status\n");
+                printf("8. View Transaction History\n");
+                printf("9. Logout\n");
+                printf("Enter your choice: ");
+                scanf("%d", &choice);
+            
+                switch (choice) {
+                    case 1: 
+                        deposit(); 
+                        saveAllData();
+                        break;
+                    case 2: 
+                        withdraw(); 
+                        saveAllData();
+                        break;
+                    case 3: 
+                        transfer(); 
+                        saveAllData();
+                        break;
+                    case 4: 
+                        checkBalance(); 
+                        saveAllData();
+                        break;
+                    case 5:
+                        applyLoan();
+                        saveAllData();
+                        break;
+                    case 6:
+                        payLoan();
+                        saveAllData();
+                        break;
+                    case 7:
+                        checkLoanStatus();
+                        break;
+                    case 8:
+                        viewTransactionHistory();
+                        break;
+                    case 9: 
+                        printf("Would you like a receipt of your transactions? (Y/N): ");
+                        scanf(" %c", &receiptChoice);
+                        while(getchar() != '\n');
+                        
+                        if (toupper(receiptChoice) == 'Y') {
+                            generateReceipt(currentUserAccountNo);
+                        }
+                        
+                        loggedIn = 0; 
+                        saveAllData();
+                        printf("Logged out successfully!\n");
+                        break;
+                    default: 
+                        printf("Invalid choice! Please try again.\n");
+                }
+            }
+        }
     }
     return 0;
 }
