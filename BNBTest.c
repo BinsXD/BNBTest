@@ -389,7 +389,9 @@ int login(char* username) {
     while (temp != NULL) {
         if (temp->accountNumber == accountNo) {
             if (temp->isAdmin == 2) {  // Check if user is restricted
-                printf("This account has been restricted. Please contact support.\n");
+                printf("\033[1;31m\nThis account has been restricted. Please contact support.\033[0m\n");
+                printf("\nEnter any key to proceed...");
+		    	getch();
                 return -1;
             }
             
@@ -1173,9 +1175,10 @@ void editUserInfo() {
     while (temp != NULL) {
         if (temp->accountNumber == accNo) {
             printf("===================================\n");
-		    printf("      \033[1;32mEDIT USER INFORMATION\033[0m         \n");
-		    printf("===================================\n");
+            printf("      \033[1;32mEDIT USER INFORMATION\033[0m         \n");
+            printf("===================================\n");
             printf("\nCurrent Information:\n");
+            printf("Username: \033[1;33m%s\033[0m\n", temp->username);
             printf("First Name: \033[1;33m%s\033[0m\n", temp->firstName);
             printf("Last Name: \033[1;33m%s\033[0m\n", temp->lastName);
             printf("Address: \033[1;33m%s\033[0m\n", temp->address);
@@ -1184,6 +1187,45 @@ void editUserInfo() {
             printf("\nEnter new information (press Enter to keep current value):\n");
             
             char input[100];
+            char newUsername[50];
+            char newPassword[50];
+            
+            // Username change
+            printf("\nNew Username: ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) {
+                strcpy(newUsername, input);
+                // Check if username is unique
+                struct User* checkUser = userHead;
+                int isUnique = 1;
+                while (checkUser != NULL) {
+                    if (strcmp(checkUser->username, newUsername) == 0 && checkUser != temp) {
+                        isUnique = 0;
+                        break;
+                    }
+                    checkUser = checkUser->next;
+                }
+                if (isUnique) {
+                    strcpy(temp->username, newUsername);
+                } else {
+                    printf("\n\033[1;31mUsername already exists! Username not changed.\033[0m\n");
+                }
+            }
+            
+            // Password change
+            printf("\nNew Password (press Enter to skip): ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) {
+                if (isStrongPassword(input)) {
+                    strcpy(temp->password, input);
+                } else {
+                    printf("\n\033[1;31mPassword is not strong enough! Password not changed.\033[0m\n");
+                }
+            }
+            
+            // Other information changes
             printf("\nNew First Name: ");
             fgets(input, sizeof(input), stdin);
             input[strcspn(input, "\n")] = 0;
@@ -1210,7 +1252,7 @@ void editUserInfo() {
         }
         temp = temp->next;
     }
-    printf("\033[1;31mAccount not found!\033[0m\n");
+    printf("\n\033[1;31mAccount not found!\033[0m\n");
 }
 
 // Function to view user's transaction history (admin version)
@@ -1501,6 +1543,163 @@ void loadingAnimation() {
     printf("\n");
 }
 
+// Add this new function for password reset
+void forgotPassword() {
+    clearConsole();
+    printf("========================\n");
+    printf("    \033[1;33mFORGOT PASSWORD\033[0m         \n");
+    printf("========================\n");
+    
+    int accountNo;
+    char newPassword[50];
+    struct User* temp = userHead;
+    
+    printf("\nEnter your Account Number: ");
+    if (scanf("%d", &accountNo) != 1) {
+        printf("\n\033[1;31mInvalid account number format!\033[0m\n");
+        while(getchar() != '\n');
+        printf("\nEnter any key to proceed...");
+        getch();
+        return;
+    }
+    while(getchar() != '\n');
+    
+    // Find user
+    while (temp != NULL) {
+        if (temp->accountNumber == accountNo) {
+            // Verify PIN for security
+            int pin;
+            printf("\nEnter your PIN: ");
+            if (scanf("%d", &pin) != 1) {
+                printf("\n\033[1;31mInvalid PIN format!\033[0m\n");
+                while(getchar() != '\n');
+                printf("\nEnter any key to proceed...");
+                getch();
+                return;
+            }
+            while(getchar() != '\n');
+            
+            if (temp->pin != pin) {
+                printf("\n\033[1;31mInvalid PIN!\033[0m\n");
+                printf("\nEnter any key to proceed...");
+                getch();
+                return;
+            }
+            
+            // Get new password
+            do {
+                printf("\nEnter new password (min 8 chars, must contain uppercase, lowercase, and number): ");
+                scanf("%s", newPassword);
+                while(getchar() != '\n');
+                
+                if (!isStrongPassword(newPassword)) {
+                    printf("\n\033[1;31mPassword is not strong enough! Please try again.\033[0m\n");
+                } else {
+                    strcpy(temp->password, newPassword);
+                    printf("\n\033[1;32mPassword changed successfully!\033[0m\n");
+                    saveAllData();
+                    printf("\nEnter any key to proceed...");
+                    getch();
+                    return;
+                }
+            } while (1);
+        }
+        temp = temp->next;
+    }
+    printf("\n\033[1;31mAccount not found!\033[0m\n");
+    printf("\nEnter any key to proceed...");
+    getch();
+}
+
+// Add new function for user profile management
+void manageUserProfile() {
+    if (!verifyPIN()) return;
+    clearConsole();
+    
+    struct User* temp = userHead;
+    while (temp != NULL) {
+        if (temp->accountNumber == currentUserAccountNo) {
+            printf("===================================\n");
+            printf("      \033[1;32mMANAGE PROFILE\033[0m         \n");
+            printf("===================================\n");
+            printf("\nCurrent Information:\n");
+            printf("Username: \033[1;33m%s\033[0m\n", temp->username);
+            printf("First Name: \033[1;33m%s\033[0m\n", temp->firstName);
+            printf("Last Name: \033[1;33m%s\033[0m\n", temp->lastName);
+            printf("Address: \033[1;33m%s\033[0m\n", temp->address);
+            printf("Phone: \033[1;33m%s\033[0m\n", temp->phoneNumber);
+            
+            printf("\nEnter new information (press Enter to keep current value):\n");
+            
+            char input[100];
+            char newUsername[50];
+            
+            // Username change
+            printf("\nNew Username: ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) {
+                strcpy(newUsername, input);
+                // Check if username is unique
+                struct User* checkUser = userHead;
+                int isUnique = 1;
+                while (checkUser != NULL) {
+                    if (strcmp(checkUser->username, newUsername) == 0 && checkUser != temp) {
+                        isUnique = 0;
+                        break;
+                    }
+                    checkUser = checkUser->next;
+                }
+                if (isUnique) {
+                    strcpy(temp->username, newUsername);
+                } else {
+                    printf("\n\033[1;31mUsername already exists! Username not changed.\033[0m\n");
+                }
+            }
+            
+            // Password change
+            printf("\nNew Password (press Enter to skip): ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) {
+                if (isStrongPassword(input)) {
+                    strcpy(temp->password, input);
+                } else {
+                    printf("\n\033[1;31mPassword is not strong enough! Password not changed.\033[0m\n");
+                }
+            }
+            
+            // Other information changes
+            printf("\nNew First Name: ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) strcpy(temp->firstName, input);
+            
+            printf("\nNew Last Name: ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) strcpy(temp->lastName, input);
+            
+            printf("\nNew Address: ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) strcpy(temp->address, input);
+            
+            printf("\nNew Phone Number: ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) strcpy(temp->phoneNumber, input);
+            
+            printf("\n\033[1;32mProfile updated successfully!\033[0m\n");
+            saveAllData();
+            printf("\nEnter any key to proceed...");
+            getch();
+            return;
+        }
+        temp = temp->next;
+    }
+}
+
 int main() {
     srand(time(NULL));  // Initialize random number generator
     int choice, loggedIn = 0;
@@ -1519,7 +1718,8 @@ int main() {
             printWelcomeBanner();
             printf("1. Login\n");
             printf("2. Sign Up\n");
-            printf("3. Exit\n");
+            printf("3. Forgot Password\n");
+            printf("4. Exit\n");
             printf("--------------------------------------------\n");
             printf("Enter your choice: ");
             scanf("%d", &choice);
@@ -1535,6 +1735,9 @@ int main() {
                     saveAllData();
                     break;
                 case 3:
+                    forgotPassword();
+                    break;
+                case 4:
                     printf("Exiting...\n");
                     return 0;
                 default:
@@ -1600,7 +1803,8 @@ int main() {
                 printf("7. Check Loan Status\n\n");
                 printf("8. View Transaction History\n\n");
                 printf("9. Display Account Information\n\n");
-                printf("10. Logout\n\n");
+                printf("10. Manage Profile\n\n");
+                printf("11. Logout\n\n");
                 printf("Enter your choice: ");
                 scanf("%d", &choice);
             
@@ -1658,7 +1862,10 @@ int main() {
                         printf("\nEnter any key to proceed...");
     					getch();
                         break;
-                    case 10: 
+                    case 10:
+                        manageUserProfile();
+                        break;
+                    case 11: 
                         printf("Would you like a receipt of your transactions? (Y/N): ");
                         scanf(" %c", &receiptChoice);
                         while(getchar() != '\n');
