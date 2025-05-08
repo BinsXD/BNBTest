@@ -1,0 +1,34 @@
+==========================================
+              BANCO NI BINS              
+==========================================
+
+Date: Thu May 08 14:18:35 2025
+Account Number: 118833
+Account Holder: asdada asdasda
+Current Balance: 15000.00
+
+Transaction History:
+------------------------------------------
+Type: Loan
+Amount: 5000.00
+Balance After: 15000.00
+Time: Thu May 08 14:17:51 2025
+------------------------------------------
+Type: Loan Payment
+Amount: 20000.00
+Balance After: 10000.00
+Time: Thu May 08 14:17:31 2025
+------------------------------------------
+Type: Deposit
+Amount: 30000.00
+Balance After: 30000.00
+Time: Thu May 08 14:17:22 2025
+------------------------------------------
+Type: Account Creation
+Amount: 0.00
+Balance After: 0.00
+Time: Thu May 08 00:54:11 2025
+------------------------------------------
+
+Thank you for banking with Banco Ni Bins!
+==========================================

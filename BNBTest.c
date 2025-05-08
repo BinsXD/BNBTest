@@ -15,11 +15,11 @@ void clearConsole() {
 }
 
 int generateAccountNumber(void);
-int checkWithdrawalLimit(int accountNumber);
+int checkWithdrawalLimit(int accountNumber); 
 void calculateInterest(void);
 void resetMonthlyWithdrawals(void);
 
-// Define structure for user credentials
+
 struct User {
     char username[50];
     char password[50];
@@ -28,41 +28,54 @@ struct User {
     char address[100];
     char phoneNumber[15];
     int pin;
-    int accountNumber;  // Store account number with user info
+    int accountNumber;  
     int isAdmin;
-    float loanBalance;  // Add loan balance
-    int hasActiveLoan;  // Flag to check if user has active loan
+    float loanBalance;  
+    int hasActiveLoan; 
     struct User* next;
 };
 
-// Define structure for bank account
+
 struct Account {
     int accountNumber;
     char name[50];
     float balance;
     char username[50];
-    char accountType[20];  // "Savings" or "Checking"
-    int monthlyWithdrawals;  // Track withdrawals for savings account
-    time_t lastInterestUpdate;  // Track when interest was last added
+    char accountType[20]; 
+    int monthlyWithdrawals; 
+    time_t lastInterestUpdate; 
     struct Account* next;
 };
 
-// Define structure for transactions
+
 struct Transaction {
     int accountNumber;
-    char transactionType[20];  // "Deposit", "Withdrawal", "Transfer"
+    char transactionType[20]; 
     float amount;
     float balanceAfter;
     time_t timestamp;
-    int recipientAccountNumber;  // For transfer transactions
-    char recipientName[50];      // For transfer transactions
+    int recipientAccountNumber; 
+    char recipientName[50];     
     struct Transaction* next;
+};
+
+
+struct Message {
+    int senderAccountNo;
+    int recipientAccountNo;
+    char senderName[50];
+    char subject[100];
+    char content[500];
+    time_t timestamp;
+    int isRead;
+    struct Message* next;
 };
 
 // Global variables
 struct User* userHead = NULL;
 struct Account* head = NULL;
 struct Transaction* transactionHead = NULL;
+struct Message* messageHead = NULL;
 int accountCounter = 1001;
 int currentUserAccountNo = 0;  // Store logged in user's account number
 
@@ -867,6 +880,7 @@ void saveAllData() {
     saveUsersToFile();
     saveAccountsToFile();
     saveTransactionsToFile();
+    saveMessagesToFile();  // Add this line
 }
 
 // Load all data
@@ -874,6 +888,7 @@ void loadAllData() {
     loadUsersFromFile();
     loadAccountsFromFile();
     loadTransactionsFromFile();
+    loadMessagesFromFile();  // Add this line
 }
 
 // Function to check loan eligibility
@@ -1730,6 +1745,467 @@ void manageUserProfile() {
     }
 }
 
+// Function to send a message
+void sendMessage(int recipientAccountNo) {
+    struct Message* newMessage = (struct Message*)calloc(1, sizeof(struct Message));
+    struct User* sender = userHead;
+    struct User* recipient = userHead;
+    char subject[100];
+    char content[500];
+    
+    // Find sender's information
+    while (sender != NULL) {
+        if (sender->accountNumber == currentUserAccountNo) {
+            break;
+        }
+        sender = sender->next;
+    }
+    
+    // Special handling for admin account
+    if (recipientAccountNo == 123123) {
+        printf("\nEnter subject: ");
+        fgets(subject, sizeof(subject), stdin);
+        subject[strcspn(subject, "\n")] = 0;
+        
+        printf("\nEnter message content: ");
+        fgets(content, sizeof(content), stdin);
+        content[strcspn(content, "\n")] = 0;
+        
+        newMessage->senderAccountNo = currentUserAccountNo;
+        newMessage->recipientAccountNo = 123123; // Admin account number
+        strcpy(newMessage->senderName, sender->firstName);
+        strcat(newMessage->senderName, " ");
+        strcat(newMessage->senderName, sender->lastName);
+        strcpy(newMessage->subject, subject);
+        strcpy(newMessage->content, content);
+        newMessage->timestamp = time(NULL);
+        newMessage->isRead = 0;
+        
+        newMessage->next = messageHead;
+        messageHead = newMessage;
+        
+        printf("\n\033[1;32mMessage sent successfully to admin!\033[0m\n");
+        return;
+    }
+    
+    // Regular user message handling
+    while (recipient != NULL) {
+        if (recipient->accountNumber == recipientAccountNo) {
+            break;
+        }
+        recipient = recipient->next;
+    }
+    
+    if (recipient == NULL) {
+        printf("\n\033[1;31mRecipient account not found!\033[0m\n");
+        return;
+    }
+    
+    printf("\nEnter subject: ");
+    fgets(subject, sizeof(subject), stdin);
+    subject[strcspn(subject, "\n")] = 0;
+    
+    printf("\nEnter message content: ");
+    fgets(content, sizeof(content), stdin);
+    content[strcspn(content, "\n")] = 0;
+    
+    newMessage->senderAccountNo = currentUserAccountNo;
+    newMessage->recipientAccountNo = recipientAccountNo;
+    strcpy(newMessage->senderName, sender->firstName);
+    strcat(newMessage->senderName, " ");
+    strcat(newMessage->senderName, sender->lastName);
+    strcpy(newMessage->subject, subject);
+    strcpy(newMessage->content, content);
+    newMessage->timestamp = time(NULL);
+    newMessage->isRead = 0;
+    
+    newMessage->next = messageHead;
+    messageHead = newMessage;
+    
+    printf("\n\033[1;32mMessage sent successfully!\033[0m\n");
+}
+
+// Function to send message to admin
+void messageAdmin() {
+    sendMessage(123123); // Admin account number
+}
+
+// Function to view inbox
+void viewInbox() {
+    struct Message* temp = messageHead;
+    int found = 0;
+    
+    printf("\n============================================\n");
+    printf("                \033[1;33mINBOX\033[0m                \n");
+    printf("============================================\n");
+    
+    while (temp != NULL) {
+        if (temp->recipientAccountNo == currentUserAccountNo) {
+            printf("\nFrom: \033[1;33m%s\033[0m\n", temp->senderName);
+            printf("Subject: \033[1;36m%s\033[0m\n", temp->subject);
+            printf("Time: \033[1;37m%s\033[0m", ctime(&temp->timestamp));
+            printf("Content: \033[1;32m%s\033[0m\n", temp->content);
+            printf("------------------------------------------\n");
+            temp->isRead = 1;
+            found = 1;
+        }
+        temp = temp->next;
+    }
+    
+    if (!found) {
+        printf("\n\033[1;31mNo messages in inbox.\033[0m\n");
+    }
+}
+
+// Function to save messages to file
+void saveMessagesToFile() {
+    FILE *fp = fopen("messages.txt", "w");
+    if (!fp) return;
+    struct Message *temp = messageHead;
+    while (temp) {
+        fprintf(fp, "%d|%d|%s|%s|%s|%ld|%d\n",
+            temp->senderAccountNo, temp->recipientAccountNo,
+            temp->senderName, temp->subject, temp->content,
+            (long)temp->timestamp, temp->isRead);
+        temp = temp->next;
+    }
+    fclose(fp);
+}
+
+// Function to load messages from file
+void loadMessagesFromFile() {
+    FILE *fp = fopen("messages.txt", "r");
+    if (!fp) return;
+    char buf[1000];
+    while (fgets(buf, sizeof(buf), fp)) {
+        struct Message *newMsg = (struct Message*)calloc(1, sizeof(struct Message));
+        long t;
+        sscanf(buf, "%d|%d|%49[^|]|%99[^|]|%499[^|]|%ld|%d",
+            &newMsg->senderAccountNo, &newMsg->recipientAccountNo,
+            newMsg->senderName, newMsg->subject, newMsg->content,
+            &t, &newMsg->isRead);
+        newMsg->timestamp = (time_t)t;
+        newMsg->next = messageHead;
+        messageHead = newMsg;
+    }
+    fclose(fp);
+}
+
+// Add this new function for admin message system
+void adminMessageSystem() {
+    clearConsole();
+    printf("============================================\n");
+    printf("             \033[1;32mADMIN MESSAGE SYSTEM\033[0m              \n");
+    printf("============================================\n");
+    printf("1. View All Messages\n");
+    printf("2. View Admin Inbox\n");
+    printf("3. Send Message to User\n");
+    printf("4. Broadcast Message to All Users\n");
+    printf("5. Back to Main Menu\n");
+    printf("Enter your choice: ");
+    
+    int choice;
+    scanf("%d", &choice);
+    while(getchar() != '\n');
+    
+    switch (choice) {
+        case 1:
+            viewAllMessages();
+            break;
+        case 2:
+            viewAdminMessages();
+            break;
+        case 3:
+            sendMessageToUser();
+            break;
+        case 4:
+            broadcastMessage();
+            break;
+        case 5:
+            return;
+        default:
+            printf("\n\033[1;31mInvalid choice!\033[0m\n");
+    }
+}
+
+// Function to view all messages in the system
+void viewAllMessages() {
+    struct Message* temp = messageHead;
+    int found = 0;
+    
+    printf("\n============================================\n");
+    printf("                \033[1;33mALL MESSAGES\033[0m                \n");
+    printf("============================================\n");
+    
+    while (temp != NULL) {
+        printf("\nFrom: \033[1;33m%s\033[0m\n", temp->senderName);
+        printf("To: \033[1;36mAccount #%d\033[0m\n", temp->recipientAccountNo);
+        printf("Subject: \033[1;36m%s\033[0m\n", temp->subject);
+        printf("Time: \033[1;37m%s\033[0m", ctime(&temp->timestamp));
+        printf("Content: \033[1;32m%s\033[0m\n", temp->content);
+        printf("Status: %s\n", temp->isRead ? "\033[1;32mRead\033[0m" : "\033[1;31mUnread\033[0m");
+        printf("------------------------------------------\n");
+        found = 1;
+        temp = temp->next;
+    }
+    
+    if (!found) {
+        printf("\n\033[1;31mNo messages in the system.\033[0m\n");
+    }
+}
+
+// Function for admin to send message to specific user
+void sendMessageToUser() {
+    int recipientAccNo;
+    struct Message* newMessage = (struct Message*)calloc(1, sizeof(struct Message));
+    char subject[100];
+    char content[500];
+    
+    printf("\nEnter recipient's account number: ");
+    if (scanf("%d", &recipientAccNo) != 1) {
+        printf("\n\033[1;31mInvalid account number!\033[0m\n");
+        while(getchar() != '\n');
+        return;
+    }
+    while(getchar() != '\n');
+    
+    // Verify account exists
+    struct User* recipient = userHead;
+    while (recipient != NULL) {
+        if (recipient->accountNumber == recipientAccNo) {
+            break;
+        }
+        recipient = recipient->next;
+    }
+    
+    if (recipient == NULL) {
+        printf("\n\033[1;31mRecipient account not found!\033[0m\n");
+        return;
+    }
+    
+    printf("\nEnter subject: ");
+    fgets(subject, sizeof(subject), stdin);
+    subject[strcspn(subject, "\n")] = 0;
+    
+    printf("\nEnter message content: ");
+    fgets(content, sizeof(content), stdin);
+    content[strcspn(content, "\n")] = 0;
+    
+    newMessage->senderAccountNo = 123123; // Admin account number
+    newMessage->recipientAccountNo = recipientAccNo;
+    strcpy(newMessage->senderName, "Admin");
+    strcpy(newMessage->subject, subject);
+    strcpy(newMessage->content, content);
+    newMessage->timestamp = time(NULL);
+    newMessage->isRead = 0;
+    
+    newMessage->next = messageHead;
+    messageHead = newMessage;
+    
+    printf("\n\033[1;32mMessage sent successfully!\033[0m\n");
+}
+
+// Function for admin to broadcast message to all users
+void broadcastMessage() {
+    struct User* temp = userHead;
+    char subject[100];
+    char content[500];
+    
+    printf("\nEnter broadcast subject: ");
+    fgets(subject, sizeof(subject), stdin);
+    subject[strcspn(subject, "\n")] = 0;
+    
+    printf("\nEnter broadcast content: ");
+    fgets(content, sizeof(content), stdin);
+    content[strcspn(content, "\n")] = 0;
+    
+    while (temp != NULL) {
+        if (temp->accountNumber != 123123) { // Don't send to admin account
+            struct Message* newMessage = (struct Message*)calloc(1, sizeof(struct Message));
+            newMessage->senderAccountNo = 123123; // Admin account number
+            newMessage->recipientAccountNo = temp->accountNumber;
+            strcpy(newMessage->senderName, "Admin");
+            strcpy(newMessage->subject, subject);
+            strcpy(newMessage->content, content);
+            newMessage->timestamp = time(NULL);
+            newMessage->isRead = 0;
+            
+            newMessage->next = messageHead;
+            messageHead = newMessage;
+        }
+        temp = temp->next;
+    }
+    
+    printf("\n\033[1;32mBroadcast message sent to all users!\033[0m\n");
+}
+
+// Add this new function to view messages sent to admin
+void viewAdminMessages() {
+    struct Message* temp = messageHead;
+    int found = 0;
+    
+    printf("\n============================================\n");
+    printf("            \033[1;33mADMIN INBOX\033[0m                \n");
+    printf("============================================\n");
+    
+    while (temp != NULL) {
+        if (temp->recipientAccountNo == 123123) { // Check for admin account number
+            printf("\nFrom: \033[1;33m%s\033[0m\n", temp->senderName);
+            printf("Subject: \033[1;36m%s\033[0m\n", temp->subject);
+            printf("Time: \033[1;37m%s\033[0m", ctime(&temp->timestamp));
+            printf("Content: \033[1;32m%s\033[0m\n", temp->content);
+            printf("Status: %s\n", temp->isRead ? "\033[1;32mRead\033[0m" : "\033[1;31mUnread\033[0m");
+            printf("------------------------------------------\n");
+            temp->isRead = 1; // Mark message as read
+            found = 1;
+        }
+        temp = temp->next;
+    }
+    
+    if (!found) {
+        printf("\n\033[1;31mNo messages in admin inbox.\033[0m\n");
+    }
+}
+
+// Add these new analytics functions after the existing functions but before main()
+
+// Function to calculate total deposits
+float calculateTotalDeposits() {
+    struct Transaction* temp = transactionHead;
+    float total = 0.0;
+    
+    while (temp != NULL) {
+        if (strcmp(temp->transactionType, "Deposit") == 0) {
+            total += temp->amount;
+        }
+        temp = temp->next;
+    }
+    return total;
+}
+
+// Function to calculate total withdrawals
+float calculateTotalWithdrawals() {
+    struct Transaction* temp = transactionHead;
+    float total = 0.0;
+    
+    while (temp != NULL) {
+        if (strcmp(temp->transactionType, "Withdrawal") == 0) {
+            total += temp->amount;
+        }
+        temp = temp->next;
+    }
+    return total;
+}
+
+// Function to calculate total transfers
+float calculateTotalTransfers() {
+    struct Transaction* temp = transactionHead;
+    float total = 0.0;
+    
+    while (temp != NULL) {
+        if (strcmp(temp->transactionType, "Transfer Out") == 0) {
+            total += temp->amount;
+        }
+        temp = temp->next;
+    }
+    return total;
+}
+
+// Function to count active loans
+int countActiveLoans() {
+    struct User* temp = userHead;
+    int count = 0;
+    
+    while (temp != NULL) {
+        if (temp->hasActiveLoan) {
+            count++;
+        }
+        temp = temp->next;
+    }
+    return count;
+}
+
+// Function to calculate total loan amount
+float calculateTotalLoanAmount() {
+    struct User* temp = userHead;
+    float total = 0.0;
+    
+    while (temp != NULL) {
+        if (temp->hasActiveLoan) {
+            total += temp->loanBalance;
+        }
+        temp = temp->next;
+    }
+    return total;
+}
+
+// Function to count account types
+void countAccountTypes(int* savings, int* checking) {
+    struct Account* temp = head;
+    *savings = 0;
+    *checking = 0;
+    
+    while (temp != NULL) {
+        if (strcmp(temp->accountType, "Savings") == 0) {
+            (*savings)++;
+        } else if (strcmp(temp->accountType, "Checking") == 0) {
+            (*checking)++;
+        }
+        temp = temp->next;
+    }
+}
+
+// Function to display analytics
+void displayAnalytics() {
+    clearConsole();
+    printf("============================================\n");
+    printf("             \033[1;32mBANKING ANALYTICS\033[0m              \n");
+    printf("============================================\n\n");
+    
+    // Transaction Analytics
+    printf("\033[1;33mTransaction Analytics:\033[0m\n");
+    printf("------------------------------------------\n");
+    printf("Total Deposits: \033[1;36m%.2f\033[0m\n", calculateTotalDeposits());
+    printf("Total Withdrawals: \033[1;36m%.2f\033[0m\n", calculateTotalWithdrawals());
+    printf("Total Transfers: \033[1;36m%.2f\033[0m\n", calculateTotalTransfers());
+    
+    // Account Analytics
+    int savingsCount, checkingCount;
+    countAccountTypes(&savingsCount, &checkingCount);
+    printf("\n\033[1;33mAccount Analytics:\033[0m\n");
+    printf("------------------------------------------\n");
+    printf("Total Savings Accounts: \033[1;36m%d\033[0m\n", savingsCount);
+    printf("Total Checking Accounts: \033[1;36m%d\033[0m\n", checkingCount);
+    printf("Total Accounts: \033[1;36m%d\033[0m\n", savingsCount + checkingCount);
+    
+    // Loan Analytics
+    printf("\n\033[1;33mLoan Analytics:\033[0m\n");
+    printf("------------------------------------------\n");
+    printf("Active Loans: \033[1;36m%d\033[0m\n", countActiveLoans());
+    printf("Total Loan Amount: \033[1;36m%.2f\033[0m\n", calculateTotalLoanAmount());
+    
+    // Message Analytics
+    struct Message* temp = messageHead;
+    int totalMessages = 0;
+    int unreadMessages = 0;
+    
+    while (temp != NULL) {
+        totalMessages++;
+        if (!temp->isRead) {
+            unreadMessages++;
+        }
+        temp = temp->next;
+    }
+    
+    printf("\n\033[1;33mMessage Analytics:\033[0m\n");
+    printf("------------------------------------------\n");
+    printf("Total Messages: \033[1;36m%d\033[0m\n", totalMessages);
+    printf("Unread Messages: \033[1;36m%d\033[0m\n", unreadMessages);
+    
+    printf("\nEnter any key to proceed...");
+    getch();
+}
+
 int main() {
     srand(time(NULL));  // Initialize random number generator
     int choice, loggedIn = 0;
@@ -1787,7 +2263,9 @@ int main() {
 			    printf("4. View User Transactions\n");
 			    printf("5. Restrict/Unrestrict User\n");
 			    printf("6. Delete User Account\n");
-			    printf("7. Logout\n");
+			    printf("7. Admin Message System\n");
+			    printf("8. Banking Analytics\n");
+			    printf("9. Logout\n");
 			    printf("Enter your choice: ");
 			    scanf("%d", &choice);
 				clearConsole();
@@ -1811,6 +2289,12 @@ int main() {
 			            deleteUserAccount();
 			            break;
 			        case 7:
+			            adminMessageSystem();
+			            break;
+			        case 8:
+			            displayAnalytics();
+			            break;
+			        case 9:
 			            loggedIn = 0;
 			            printf("Logged out successfully!\n");
 			            break;
@@ -1834,7 +2318,8 @@ int main() {
                 printf("8. View Transaction History\n\n");
                 printf("9. Display Account Information\n\n");
                 printf("10. Manage Profile\n\n");
-                printf("11. Logout\n\n");
+                printf("11. Message System\n\n");
+                printf("12. Logout\n\n");
                 printf("Enter your choice: ");
                 scanf("%d", &choice);
             
@@ -1895,7 +2380,42 @@ int main() {
                     case 10:
                         manageUserProfile();
                         break;
-                    case 11: 
+                    case 11:
+                        clearConsole();
+                        printf("============================================\n");
+                        printf("             \033[1;32mMESSAGE SYSTEM\033[0m              \n");
+                        printf("============================================\n");
+                        printf("1. Send Message to User\n");
+                        printf("2. Message Admin\n");
+                        printf("3. View Inbox\n");
+                        printf("4. Back to Main Menu\n");
+                        printf("Enter your choice: ");
+                        scanf("%d", &choice);
+                        while(getchar() != '\n');
+                        
+                        switch (choice) {
+                            case 1:
+                                printf("\nEnter recipient's account number: ");
+                                int recipientAccNo;
+                                scanf("%d", &recipientAccNo);
+                                while(getchar() != '\n');
+                                sendMessage(recipientAccNo);
+                                break;
+                            case 2:
+                                messageAdmin();
+                                break;
+                            case 3:
+                                viewInbox();
+                                break;
+                            case 4:
+                                break;
+                            default:
+                                printf("\n\033[1;31mInvalid choice!\033[0m\n");
+                        }
+                        printf("\nEnter any key to proceed...");
+                        getch();
+                        break;
+                    case 12: 
                         printf("Would you like a receipt of your transactions? (Y/N): ");
                         scanf(" %c", &receiptChoice);
                         while(getchar() != '\n');

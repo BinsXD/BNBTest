@@ -1,0 +1,12 @@
+118833|123123|asdada asdasda|hello admin|hello|1746684548|1
+127464|118833|Sebings Name|Message check|received|1746683941|1
+123123|117380|Admin|message to all|hello ebrinyan|1746684210|0
+123123|110385|Admin|message to all|hello ebrinyan|1746684210|1
+123123|106659|Admin|message to all|hello ebrinyan|1746684210|0
+123123|116520|Admin|message to all|hello ebrinyan|1746684210|0
+123123|120867|Admin|message to all|hello ebrinyan|1746684210|0
+123123|127799|Admin|message to all|hello ebrinyan|1746684210|0
+123123|103837|Admin|message to all|hello ebrinyan|1746684210|0
+123123|108063|Admin|message to all|hello ebrinyan|1746684210|0
+123123|118833|Admin|message to all|hello ebrinyan|1746684210|1
+123123|127464|Admin|message to all|hello ebrinyan|1746684210|1

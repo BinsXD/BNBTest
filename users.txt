@@ -1,10 +1,10 @@
-asdas|Vince123!|asda|asdas|asdasd|asdasd|1234|117380|0|0.00|0
-asdasd|Vince123!|clear|test|asdasdas|123123|1234|110385|0|0.00|0
-uiupdate|Vince123!|ui|update|yes|321123|1234|106659|0|0.00|0
-Binx|Vince123!|Vince|Bernante|Compostela|09123123123|1234|116520|0|0.00|0
-Vince|Vince123!|Vince|Bernante|Compostela|09612636493|1234|120867|2|0.00|0
-adasdasd|Vince123!|View 3|transac|compo1|09123|1234|127799|0|6000.00|1
-bigupdate|Vince123!|big|update|compo|0909123|1234|103837|0|0.00|0
-bruhmoment|Vince123!|ui|update|dunno|3212313|1234|108063|0|0.00|0
-hjkhjkhjk|Vince123!|asdada|asdasda|asdasd|asdasd|1234|118833|0|285210466310955200000.00|808811628
 binx|Vince123!|Sebings|Name|Comps|123123|1234|127464|0|1200.00|1
+hjkhjkhjk|Vince123!|asdada|asdasda|asdasd|asdasd|1234|118833|0|6000.00|1
+bruhmoment|Vince123!|ui|update|dunno|3212313|1234|108063|0|0.00|0
+bigupdate|Vince123!|big|update|compo|0909123|1234|103837|0|0.00|0
+adasdasd|Vince123!|View 3|transac|compo1|09123|1234|127799|0|6000.00|1
+Vince|Vince123!|Vince|Bernante|Compostela|09612636493|1234|120867|2|0.00|0
+Binx|Vince123!|Vince|Bernante|Compostela|09123123123|1234|116520|0|0.00|0
+uiupdate|Vince123!|ui|update|yes|321123|1234|106659|0|0.00|0
+asdasd|Vince123!|clear|test|asdasdas|123123|1234|110385|0|0.00|0
+asdas|Vince123!|asda|asdas|asdasd|asdasd|1234|117380|0|0.00|0
