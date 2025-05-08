@@ -1183,12 +1183,14 @@ void editUserInfo() {
             printf("Last Name: \033[1;33m%s\033[0m\n", temp->lastName);
             printf("Address: \033[1;33m%s\033[0m\n", temp->address);
             printf("Phone: \033[1;33m%s\033[0m\n", temp->phoneNumber);
+            printf("PIN: \033[1;33m****\033[0m\n");
             
             printf("\nEnter new information (press Enter to keep current value):\n");
             
             char input[100];
             char newUsername[50];
             char newPassword[50];
+            int newPin;
             
             // Username change
             printf("\nNew Username: ");
@@ -1245,6 +1247,19 @@ void editUserInfo() {
             fgets(input, sizeof(input), stdin);
             input[strcspn(input, "\n")] = 0;
             if (strlen(input) > 0) strcpy(temp->phoneNumber, input);
+            
+            // Add PIN change
+            printf("\nNew PIN (press Enter to skip): ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) {
+                newPin = atoi(input);
+                if (newPin >= 1000 && newPin <= 9999) {
+                    temp->pin = newPin;
+                } else {
+                    printf("\n\033[1;31mPIN must be exactly 4 digits! PIN not changed.\033[0m\n");
+                }
+            }
             
             printf("\n\033[1;32mUser information updated successfully!\033[0m\n");
             saveAllData();
@@ -1628,11 +1643,13 @@ void manageUserProfile() {
             printf("Last Name: \033[1;33m%s\033[0m\n", temp->lastName);
             printf("Address: \033[1;33m%s\033[0m\n", temp->address);
             printf("Phone: \033[1;33m%s\033[0m\n", temp->phoneNumber);
+            printf("PIN: \033[1;33m****\033[0m\n");
             
             printf("\nEnter new information (press Enter to keep current value):\n");
             
             char input[100];
             char newUsername[50];
+            int newPin;
             
             // Username change
             printf("\nNew Username: ");
@@ -1689,6 +1706,19 @@ void manageUserProfile() {
             fgets(input, sizeof(input), stdin);
             input[strcspn(input, "\n")] = 0;
             if (strlen(input) > 0) strcpy(temp->phoneNumber, input);
+            
+            // Add PIN change
+            printf("\nNew PIN (press Enter to skip): ");
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            if (strlen(input) > 0) {
+                newPin = atoi(input);
+                if (newPin >= 1000 && newPin <= 9999) {
+                    temp->pin = newPin;
+                } else {
+                    printf("\n\033[1;31mPIN must be exactly 4 digits! PIN not changed.\033[0m\n");
+                }
+            }
             
             printf("\n\033[1;32mProfile updated successfully!\033[0m\n");
             saveAllData();
