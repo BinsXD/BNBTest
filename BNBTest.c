@@ -1141,20 +1141,22 @@ void viewTransactionHistory() {
 // Function to view all users' information
 void viewAllUsers() {
     struct User* temp = userHead;
-    printf("\n=== All Users Information ===\n");
+    printf("============================================\n");
+    printf("         \033[1;32mALL USERS INFORMATION\033[0m              \n");
+    printf("============================================\n");
     printf("------------------------------------------\n");
     
     while (temp != NULL) {
-        printf("Username: %s\n", temp->username);
-        printf("Full Name: %s %s\n", temp->firstName, temp->lastName);
-        printf("Address: %s\n", temp->address);
-        printf("Phone: %s\n", temp->phoneNumber);
-        printf("Account Number: %d\n", temp->accountNumber);
-        printf("Has Active Loan: %s\n", temp->hasActiveLoan ? "Yes" : "No");
+        printf("Username: \033[1;33m%s\033[0m\n", temp->username);
+        printf("Full Name: \033[1;33m%s\033[0m \033[1;33m%s\033[0m\n", temp->firstName, temp->lastName);
+        printf("Address: \033[1;33m%s\033[0m\n", temp->address);
+        printf("Phone: \033[1;33m%s\033[0m\n", temp->phoneNumber);
+        printf("Account Number: \033[1;36m%d\033[0m\n\n", temp->accountNumber);
+        printf("Has Active Loan: \033[1;32m%s\033[0m\n\n", temp->hasActiveLoan ? "Yes" : "No");
         if (temp->hasActiveLoan) {
-            printf("Loan Balance: %.2f\n", temp->loanBalance);
+            printf("Loan Balance: \033[1;36m%.2f\033[0m\n\n", temp->loanBalance);
         }
-        printf("------------------------------------------\n");
+        printf("\033[1;37m------------------------------------------\033[0m\n");
         temp = temp->next;
     }
 }
@@ -1170,43 +1172,45 @@ void editUserInfo() {
     
     while (temp != NULL) {
         if (temp->accountNumber == accNo) {
-            printf("\n=== Edit User Information ===\n");
-            printf("Current Information:\n");
-            printf("First Name: %s\n", temp->firstName);
-            printf("Last Name: %s\n", temp->lastName);
-            printf("Address: %s\n", temp->address);
-            printf("Phone: %s\n", temp->phoneNumber);
+            printf("===================================\n");
+		    printf("      \033[1;32mEDIT USER INFORMATION\033[0m         \n");
+		    printf("===================================\n");
+            printf("\nCurrent Information:\n");
+            printf("First Name: \033[1;33m%s\033[0m\n", temp->firstName);
+            printf("Last Name: \033[1;33m%s\033[0m\n", temp->lastName);
+            printf("Address: \033[1;33m%s\033[0m\n", temp->address);
+            printf("Phone: \033[1;33m%s\033[0m\n", temp->phoneNumber);
             
             printf("\nEnter new information (press Enter to keep current value):\n");
             
             char input[100];
-            printf("New First Name: ");
+            printf("\nNew First Name: ");
             fgets(input, sizeof(input), stdin);
             input[strcspn(input, "\n")] = 0;
             if (strlen(input) > 0) strcpy(temp->firstName, input);
             
-            printf("New Last Name: ");
+            printf("\nNew Last Name: ");
             fgets(input, sizeof(input), stdin);
             input[strcspn(input, "\n")] = 0;
             if (strlen(input) > 0) strcpy(temp->lastName, input);
             
-            printf("New Address: ");
+            printf("\nNew Address: ");
             fgets(input, sizeof(input), stdin);
             input[strcspn(input, "\n")] = 0;
             if (strlen(input) > 0) strcpy(temp->address, input);
             
-            printf("New Phone Number: ");
+            printf("\nNew Phone Number: ");
             fgets(input, sizeof(input), stdin);
             input[strcspn(input, "\n")] = 0;
             if (strlen(input) > 0) strcpy(temp->phoneNumber, input);
             
-            printf("\nUser information updated successfully!\n");
+            printf("\n\033[1;32mUser information updated successfully!\033[0m\n");
             saveAllData();
             return;
         }
         temp = temp->next;
     }
-    printf("Account not found!\n");
+    printf("\033[1;31mAccount not found!\033[0m\n");
 }
 
 // Function to view user's transaction history (admin version)
@@ -1214,37 +1218,52 @@ void viewUserTransactions() {
     int accNo;
     struct Transaction* temp = transactionHead;
     int found = 0;
-    
+
     printf("\nEnter account number to view transactions: ");
     scanf("%d", &accNo);
     while(getchar() != '\n');
-    
-    printf("\n=== Transaction History for Account %d ===\n", accNo);
-    printf("------------------------------------------\n");
-    
+
+    // Check if account exists
+    struct Account* accCheck = head;
+    int accExists = 0;
+    while (accCheck != NULL) {
+        if (accCheck->accountNumber == accNo) {
+            accExists = 1;
+            break;
+        }
+        accCheck = accCheck->next;
+    }
+    if (!accExists) {
+        printf("\n\033[1;31mInvalid account number! No such account exists.\033[0m\n");
+        return;
+    }
+
+    printf("\n=== \033[1;33mTransaction History for Account\033[0m \033[1;36m%d\033[0m ===\n", accNo);
+    printf("\n------------------------------------------\n");
+
     while (temp != NULL) {
         if (temp->accountNumber == accNo) {
-            printf("Type: %s\n", temp->transactionType);
-            printf("Amount: %.2f\n", temp->amount);
-            printf("Balance After: %.2f\n", temp->balanceAfter);
-            
+            printf("Type: \033[1;33m%s\033[0m\n", temp->transactionType);
+            printf("Amount: \033[1;36m%.2f\033[0m\n", temp->amount);
+            printf("Balance After: \033[1;36m%.2f\033[0m\n", temp->balanceAfter);
+
             if (strcmp(temp->transactionType, "Transfer Out") == 0) {
-                printf("Recipient Account: %d\n", temp->recipientAccountNumber);
-                printf("Recipient Name: %s\n", temp->recipientName);
+                printf("Recipient Account: \033[1;36m%d\033[0m\n", temp->recipientAccountNumber);
+                printf("Recipient Name: \033[1;33m%s\033[0m\n", temp->recipientName);
             } else if (strcmp(temp->transactionType, "Transfer In") == 0) {
-                printf("Sender Account: %d\n", temp->recipientAccountNumber);
-                printf("Sender Name: %s\n", temp->recipientName);
+                printf("Sender Account: \033[1;36m%d\033[0m\n", temp->recipientAccountNumber);
+                printf("Sender Name: \033[1;33m%s\033[0m\n", temp->recipientName);
             }
-            
-            printf("Time: %s", ctime(&temp->timestamp));
+
+            printf("Time: \033[1;37m%s\033[0m", ctime(&temp->timestamp));
             printf("------------------------------------------\n");
             found = 1;
         }
         temp = temp->next;
     }
-    
+
     if (!found) {
-        printf("No transactions found for this account.\n");
+        printf("\033[1;31mNo transactions found for this account.\033[0m\n");
     }
 }
 
@@ -1264,14 +1283,14 @@ void toggleUserRestriction() {
                 return;
             }
             temp->isAdmin = temp->isAdmin == 2 ? 0 : 2;  // 2 represents restricted
-            printf("User %s has been %s\n", temp->username, 
-                   temp->isAdmin == 2 ? "restricted" : "unrestricted");
+            printf("\nUser \033[1;33m%s\033[0m has been %s\n", temp->username, 
+                   temp->isAdmin == 2 ? "\033[1;31mrestricted\033[0m" : "\033[1;32munrestricted\033[0m");
             saveAllData();
             return;
         }
         temp = temp->next;
     }
-    printf("Account not found!\n");
+    printf("\033[1;31mAccount not found!\033[0m\n");
 }
 
 // Function to delete user account
@@ -1279,16 +1298,31 @@ void deleteUserAccount() {
     int accNo;
     struct User *temp = userHead, *prev = NULL;
     struct Account *accTemp = head, *accPrev = NULL;
-    
+
     printf("\nEnter account number to delete: ");
     scanf("%d", &accNo);
     while(getchar() != '\n');
-    
+
     if (accNo == 123123) {  // Prevent deleting admin account
-        printf("Cannot delete admin account!\n");
+        printf("\n\033[1;31mCannot delete admin account!\033[0m\n");
         return;
     }
-    
+
+    // Check if account exists
+    struct Account* accCheck = head;
+    int accExists = 0;
+    while (accCheck != NULL) {
+        if (accCheck->accountNumber == accNo) {
+            accExists = 1;
+            break;
+        }
+        accCheck = accCheck->next;
+    }
+    if (!accExists) {
+        printf("\n\033[1;31mInvalid account number! No such account exists.\033[0m\n");
+        return;
+    }
+
     // Delete from user list
     while (temp != NULL) {
         if (temp->accountNumber == accNo) {
@@ -1303,7 +1337,7 @@ void deleteUserAccount() {
         prev = temp;
         temp = temp->next;
     }
-    
+
     // Delete from account list
     while (accTemp != NULL) {
         if (accTemp->accountNumber == accNo) {
@@ -1318,8 +1352,8 @@ void deleteUserAccount() {
         accPrev = accTemp;
         accTemp = accTemp->next;
     }
-    
-    printf("Account deleted successfully!\n");
+
+    printf("\033[1;32mAccount deleted successfully!\033[0m\n");
     saveAllData();
 }
 
@@ -1334,24 +1368,26 @@ void viewSpecificUser() {
     
     while (temp != NULL) {
         if (temp->accountNumber == accNo) {
-            printf("\n=== User Information ===\n");
+            printf("\n============================================\n");
+			    printf("             \033[1;32mUSER INFORMATION\033[0m              \n");
+			    printf("============================================\n");
             printf("------------------------------------------\n");
-            printf("Username: %s\n", temp->username);
-            printf("Full Name: %s %s\n", temp->firstName, temp->lastName);
-            printf("Address: %s\n", temp->address);
-            printf("Phone: %s\n", temp->phoneNumber);
-            printf("Account Number: %d\n", temp->accountNumber);
-            printf("Has Active Loan: %s\n", temp->hasActiveLoan ? "Yes" : "No");
+            printf("Username: \033[1;33m%s\033[0m\n", temp->username);
+            printf("\nFull Name: \033[1;33m%s\033[0m \033[1;33m%s\033[0m\n", temp->firstName, temp->lastName);
+            printf("\nAddress: \033[1;33m%s\033[0m\n", temp->address);
+            printf("\nPhone: \033[1;33m%s\033[0m\n", temp->phoneNumber);
+            printf("\nAccount Number: \033[1;36m%d\033[0m\n", temp->accountNumber);
+            printf("\nHas Active Loan: \033[1;32m%s\033[0m\n", temp->hasActiveLoan ? "Yes" : "No");
             if (temp->hasActiveLoan) {
-                printf("Loan Balance: %.2f\n", temp->loanBalance);
+                printf("\nLoan Balance: \033[1;36m%.2f\033[0m\n", temp->loanBalance);
             }
-            printf("Account Status: %s\n", temp->isAdmin == 2 ? "Restricted" : "Active");
+            printf("\nAccount Status: %s\n", temp->isAdmin == 2 ? "\033[1;31mRestricted\033[0m" : "\033[1;32mActive\033[0m");
             printf("------------------------------------------\n");
             return;
         }
         temp = temp->next;
     }
-    printf("Account not found!\n");
+    printf("\n\033[1;31mAccount not found!\033[0m\n");
 }
 
 // Function to check withdrawal limit for savings account
@@ -1521,7 +1557,7 @@ int main() {
 			    printf("7. Logout\n");
 			    printf("Enter your choice: ");
 			    scanf("%d", &choice);
-			
+				clearConsole();
 			    switch (choice) {
 			        case 1:
 			            viewAllUsers();
@@ -1548,6 +1584,8 @@ int main() {
 			        default:
 			            printf("Invalid choice! Please try again.\n");
 			    }
+			    printf("\nEnter any key to proceed...");
+    			getch();
 			} else {  // Regular user menu
                 clearConsole();
                 printf("============================================\n");
